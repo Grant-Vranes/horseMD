@@ -525,6 +525,11 @@ export default function App() {
   const getMarkdownForTab = useCallback((id) => {
     const sourceElement = sourceTextareas.current[id]
     if (sourceElement) return getTextareaSourceValue(sourceElement)
+    // Excalidraw durability boundary: serialize the LIVE scene. A mounted
+    // whiteboard returning null means serialization failed — callers abort
+    // rather than resurrect stale tab.content (same rule as rich editors).
+    const anyEditorApi = editorApis.current[id]
+    if (anyEditorApi?.getSceneJson) return anyEditorApi.getSceneJson()
     // Save/export is a durability boundary. Unlike a reading-only source-mode
     // toggle, it must serialize the live ProseMirror doc even when a custom
     // node view has not yet delivered its edit-intent callback.
