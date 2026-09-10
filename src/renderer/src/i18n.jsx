@@ -721,6 +721,10 @@ export const STRINGS = {
     'tab.closeOthers': 'Close Others',
     'tab.noPath': 'Unsaved file — save it first',
 
+    // excalidraw whiteboard
+    'excalidraw.corruptNote': 'File is not a valid Excalidraw scene — showing a blank canvas',
+    'excalidraw.mobilePlaceholder': 'Whiteboard editing is currently desktop-only',
+
     // split view
     'split.toggle': 'Split editor',
     'split.close': 'Close split',
@@ -1439,6 +1443,10 @@ export const STRINGS = {
     'tab.close': '关闭',
     'tab.closeOthers': '关闭其他',
     'tab.noPath': '未保存的文件，请先保存',
+
+    // excalidraw whiteboard
+    'excalidraw.corruptNote': '文件内容不是有效的 Excalidraw 场景，已显示为空白画布',
+    'excalidraw.mobilePlaceholder': '白板编辑目前仅桌面版支持',
 
     'split.toggle': '分屏',
     'split.close': '关闭分屏',

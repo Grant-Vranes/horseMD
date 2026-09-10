@@ -48,10 +48,27 @@ export default function ExcalidrawEditor({ tab, onChange, registerApi }) {
     [onChange]
   )
 
-  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current) }, [])
+  useEffect(() => () => {
+    // A pending debounce means the last edit (<500ms old) never reached the
+    // parent. Flush it synchronously so closing/switching cannot lose it.
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+      timerRef.current = null
+      try {
+        onChange?.(serializeScene(latestRef.current))
+      } catch {
+        // Unusable scene at unmount is dropped — the save path would have
+        // aborted on it anyway.
+      }
+    }
+  }, [onChange])
 
   // Save/export pipeline API. getSceneJson serializes the LIVE scene — null
   // only when serialization genuinely fails (callers must then abort saving).
+  // Keep the register callback in a ref so parent re-renders (new inline
+  // arrow identity) don't tear the API down and re-register it every render.
+  const registerApiRef = useRef(registerApi)
+  registerApiRef.current = registerApi
   useEffect(() => {
     const api = {
       getSceneJson: () => {
@@ -71,9 +88,9 @@ export default function ExcalidrawEditor({ tab, onChange, registerApi }) {
         return new XMLSerializer().serializeToString(svg)
       }
     }
-    registerApi?.(api)
-    return () => registerApi?.(null)
-  }, [registerApi])
+    registerApiRef.current?.(api)
+    return () => registerApiRef.current?.(null)
+  }, [])
 
   // Test hook (CDP scripts drive scene changes programmatically instead of
   // simulating hand-drawn strokes). Read-only reference to the official API.
