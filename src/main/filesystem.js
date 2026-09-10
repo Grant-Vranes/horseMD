@@ -114,6 +114,12 @@ export function registerFileSystemIpc(ipcMain, { shell, markdownPattern }) {
     return { mtimeMs: stat.mtimeMs }
   })
 
+  ipcMain.handle('fs:writeBinary', async (_event, path, base64) => {
+    await fs.writeFile(path, Buffer.from(String(base64 || ''), 'base64'))
+    const stat = await fs.stat(path)
+    return { mtimeMs: stat.mtimeMs }
+  })
+
   ipcMain.handle('fs:rename', async (_event, oldPath, newPath) => {
     if (existsSync(newPath) && newPath.toLowerCase() !== oldPath.toLowerCase()) {
       throw new Error('A file or folder with that name already exists.')

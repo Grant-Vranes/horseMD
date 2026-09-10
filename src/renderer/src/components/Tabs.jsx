@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Icon } from './icons.jsx'
 import { useI18n } from '../i18n.jsx'
-import { isMarkdownName } from '../paths.js'
+import { isMarkdownName, isExcalidrawName } from '../paths.js'
 import { copyToClipboard } from '../ui.js'
 import { labelWithShortcut } from '../lib/commands/shortcut-labels.js'
 import ExportContextSubmenu from './ExportContextSubmenu.jsx'
@@ -23,6 +23,7 @@ export default function Tabs({
   onExportPdf,
   onExportHtml,
   onExportPandoc,
+  onExportExcalidraw,
   onReorder,
   effectiveKeybindings
 }) {
@@ -209,6 +210,16 @@ export default function Tabs({
                       onExportHtml={onExportHtml ? () => onExportHtml(tab.path) : undefined}
                       onExportPandoc={onExportPandoc ? (format) => onExportPandoc(tab.path, format) : undefined}
                     />
+                  )}
+                  {isExcalidrawName(tab.title) && window.api.capabilities?.excalidraw && (
+                    <>
+                      <button className="tab-menu-item" onClick={run(() => onExportExcalidraw?.(tab.id, 'png'))}>
+                        {t('cmd.exportExcalidrawPng')}
+                      </button>
+                      <button className="tab-menu-item" onClick={run(() => onExportExcalidraw?.(tab.id, 'svg'))}>
+                        {t('cmd.exportExcalidrawSvg')}
+                      </button>
+                    </>
                   )}
                   <div className="tab-menu-sep" />
                   <button className="tab-menu-item" onClick={run(() => onClose(tab.id))}>

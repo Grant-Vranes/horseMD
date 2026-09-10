@@ -884,6 +884,8 @@ function buildMenu() {
         { label: 'Save As…', accelerator: menuAccelerator('file.saveAs'), click: menuCmd('saveAs') },
         { label: 'Export as PDF…', accelerator: menuAccelerator('file.exportPdf'), click: menuCmd('exportPdf') },
         { label: 'Export as HTML…', accelerator: menuAccelerator('file.exportHtml'), click: menuCmd('exportHtml') },
+        { label: 'Export as PNG…', accelerator: menuAccelerator('file.exportExcalidrawPng'), click: menuCmd('exportExcalidrawPng') },
+        { label: 'Export as SVG…', accelerator: menuAccelerator('file.exportExcalidrawSvg'), click: menuCmd('exportExcalidrawSvg') },
         {
           label: 'Export via Pandoc',
           submenu: [

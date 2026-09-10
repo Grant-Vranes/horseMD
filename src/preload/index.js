@@ -17,7 +17,7 @@ const api = {
   openFiles: () => ipcRenderer.invoke('dialog:openFiles'),
   openAttachments: () => ipcRenderer.invoke('dialog:openAttachments'),
   openFolder: () => ipcRenderer.invoke('dialog:openFolder'),
-  saveAs: (defaultName) => ipcRenderer.invoke('dialog:saveAs', defaultName),
+  saveAs: (defaultName, opts) => ipcRenderer.invoke('dialog:saveAs', defaultName, opts),
   previewPDF: (source, defaultName, options, sourcePath) =>
     ipcRenderer.invoke('pdf:preview', { source, defaultName, options, sourcePath }),
   savePDFPreview: (token, defaultName) =>
@@ -36,6 +36,7 @@ const api = {
   // fs
   readFile: (path) => ipcRenderer.invoke('fs:readFile', path),
   writeFile: (path, content) => ipcRenderer.invoke('fs:writeFile', path, content),
+  writeBinary: (path, base64) => ipcRenderer.invoke('fs:writeBinary', path, base64),
   rename: (oldPath, newPath) => ipcRenderer.invoke('fs:rename', oldPath, newPath),
   deleteItem: (path) => ipcRenderer.invoke('fs:delete', path),
   createFile: (path, content) => ipcRenderer.invoke('fs:createFile', path, content),

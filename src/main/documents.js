@@ -32,10 +32,10 @@ export function registerDocumentIpc(ipcMain, { getMainWindow, getUserDataPath, m
     return res.canceled ? null : res.filePaths[0]
   })
 
-  ipcMain.handle('dialog:saveAs', async (_event, defaultName) => {
+  ipcMain.handle('dialog:saveAs', async (_event, defaultName, opts) => {
     const res = await dialog.showSaveDialog(getMainWindow(), {
       defaultPath: defaultName || 'Untitled.md',
-      filters: [{ name: 'Markdown', extensions: ['md', 'markdown'] }]
+      filters: opts?.filters || [{ name: 'Markdown', extensions: ['md', 'markdown'] }]
     })
     return res.canceled ? null : res.filePath
   })

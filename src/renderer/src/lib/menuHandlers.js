@@ -24,6 +24,8 @@ const COMMAND_PALETTE_ICONS = {
   'file.saveAs': 'save',
   'file.attach': 'paperclip',
   'file.exportPdf': 'file',
+  'file.exportExcalidrawPng': 'file',
+  'file.exportExcalidrawSvg': 'file',
   'file.exportHtml': 'globe',
   'file.exportPandocDocx': 'file',
   'file.exportPandocEpub': 'file',
@@ -107,7 +109,8 @@ export function createMenuHandlers({
   review,
   requestPdfExport,
   requestHtmlExport,
-  requestPandocExport
+  requestPandocExport,
+  exportExcalidraw,
 }) {
   const exportRendered = async (kind) => {
     const id = pickEditableId()
@@ -150,6 +153,8 @@ export function createMenuHandlers({
     },
     attachFile: attachFiles,
     exportPdf: () => exportRendered('pdf'),
+    exportExcalidrawPng: () => exportExcalidraw?.('png'),
+    exportExcalidrawSvg: () => exportExcalidraw?.('svg'),
     exportHtml: () => exportRendered('html'),
     exportPandocDocx: () => exportPandoc('docx'),
     exportPandocEpub: () => exportPandoc('epub'),

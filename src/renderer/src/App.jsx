@@ -60,7 +60,8 @@ import { useSystemColorScheme } from './hooks/useSystemColorScheme.js'
 import { useDropOpen } from './hooks/useDropOpen.js'
 import { buildElectronAcceleratorPayload } from './lib/commands/electron-accelerators.js'
 import { createMenuHandlers, useGlobalKeys, useCommands } from './lib/menuHandlers.js'
-import { isAbsolutePath, isPlainTextDoc, loadSession, loadFolderRootsFromSession } from './paths.js'
+import { isAbsolutePath, isPlainTextDoc, isExcalidrawName, loadSession, loadFolderRootsFromSession } from './paths.js'
+import { blobToBase64 } from './lib/excalidraw-export.js'
 import { createReviewActions } from './lib/reviewActions.js'
 import { createEditorApiRegistry } from './lib/editor-api-registry.js'
 import { moveHeadingSection } from './outline-reorder.js'
@@ -543,6 +544,31 @@ export default function App() {
     return tabsRef.current.find((tab) => tab.id === id)?.content || ''
   }, [editorApis, sourceTextareas, tabsRef])
 
+  const exportExcalidrawImage = useCallback(async (id, format) => {
+    const tab = tabsRef.current.find((x) => x.id === id)
+    if (!tab || !isExcalidrawName(tab.path)) return
+    const api = editorApis.current[id]
+    if (!api?.getSceneJson) {
+      window.alert(tRef.current('error.excalidrawExportUnavailable'))
+      return
+    }
+    const base = (tab.title || 'whiteboard').replace(/\.excalidraw$/i, '')
+    const target = await window.api.saveAs(`${base}.${format}`, {
+      filters: [{ name: format.toUpperCase(), extensions: [format] }]
+    })
+    if (!target) return
+    try {
+      if (format === 'png') {
+        const blob = await api.exportPng()
+        await window.api.writeBinary(target, await blobToBase64(blob))
+      } else {
+        await window.api.writeFile(target, await api.exportSvg())
+      }
+    } catch (e) {
+      window.alert((tRef.current('error.exportFailed') || 'Export failed: ') + (e?.message || e))
+    }
+  }, [editorApis, tabsRef, tRef])
+
   const getSettledMarkdownForTab = useCallback(async (id) => {
     const sourceElement = sourceTextareas.current[id]
     if (sourceElement) return getTextareaSourceValue(sourceElement)
@@ -615,6 +641,9 @@ export default function App() {
     requestPdfExport,
     requestHtmlExport,
     requestPandocExport,
+    exportExcalidraw: (format) => {
+      if (activeIdRef.current) exportExcalidrawImage(activeIdRef.current, format)
+    },
     setSidebarOpen,
     initialFolderRoots: initialFolderRoots
   })
@@ -1116,6 +1145,7 @@ export default function App() {
         onExportPdf={exportPathToPdf}
         onExportHtml={exportPathToHtml}
         onExportPandoc={exportPathWithPandoc}
+        onExportExcalidraw={exportExcalidrawImage}
         onReorder={reorderTabs}
         onToggleSidebar={() => setSidebarOpen((v) => !v)}
         onToggleReadOnly={() => updateSettings({ mobileReadOnly: !settings.mobileReadOnly })}

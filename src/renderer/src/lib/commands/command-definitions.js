@@ -132,6 +132,28 @@ export const COMMAND_DEFINITIONS = [
     palette: true
   },
   {
+    id: 'file.exportExcalidrawPng',
+    handler: 'exportExcalidrawPng',
+    titleKey: 'cmd.exportExcalidrawPng',
+    category: COMMAND_CATEGORIES.FILE,
+    context: COMMAND_CONTEXTS.DOCUMENT,
+    defaultKeybindings: [],
+    electronAccelerator: true,
+    capability: 'excalidraw',
+    palette: true
+  },
+  {
+    id: 'file.exportExcalidrawSvg',
+    handler: 'exportExcalidrawSvg',
+    titleKey: 'cmd.exportExcalidrawSvg',
+    category: COMMAND_CATEGORIES.FILE,
+    context: COMMAND_CONTEXTS.DOCUMENT,
+    defaultKeybindings: [],
+    electronAccelerator: true,
+    capability: 'excalidraw',
+    palette: true
+  },
+  {
     id: 'file.exportHtml',
     handler: 'exportHtml',
     titleKey: 'cmd.exportHtml',
