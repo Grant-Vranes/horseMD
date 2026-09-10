@@ -165,7 +165,8 @@ const api = {
     splitView: true,
     fileAttachments: true,
     cloudSync: true,
-    nativeDropOpen: true
+    nativeDropOpen: true,
+    excalidraw: true
   }
 }
 

@@ -14,8 +14,9 @@
 // arrives a static pane skeleton shows, then the existing loading skeleton and
 // chunked-load flow take over exactly as before.
 const Editor = lazy(() => import('../Editor.jsx'))
+const ExcalidrawEditor = lazy(() => import('../ExcalidrawEditor.jsx'))
 import { Icon } from '../icons.jsx'
-import { isPlainTextDoc, shouldUseRichContentVisibility } from '../../paths.js'
+import { isExcalidrawName, isPlainTextDoc, shouldUseRichContentVisibility } from '../../paths.js'
 import { attachSourceCaret } from '../editor-source-caret.js'
 import { updateTextareaSourceFromDom } from '../../source-text-fidelity.js'
 import { Suspense, lazy, useRef } from 'react'
@@ -113,7 +114,10 @@ export default function EditorArea({
         // intentionally distinct from `split`, which shows TWO documents.
         const heavyAsSource = tab.heavy && !richForced.has(tab.id)
         const plainText = isPlainTextDoc(tab)
-        const isSourceRichSplit = sourceRichSplitMode && isLeft && !plainText && !heavyAsSource
+        const excalidrawDoc = isExcalidrawName(tab.path)
+        const shouldMountExcalidraw = excalidrawDoc && (inView || mountedIds.has(tab.id))
+        const excalidrawEnabled = window.api?.capabilities?.excalidraw === true
+        const isSourceRichSplit = sourceRichSplitMode && isLeft && !plainText && !heavyAsSource && !excalidrawDoc
         const onPaneFocus = (pane = null) => {
           focusedTabRef.current = tab.id
           if (split) setFocusedPane(isRight ? 'right' : 'left')
@@ -135,15 +139,52 @@ export default function EditorArea({
         // In global source mode the active Markdown pane shows a textarea too,
         // but its already-mounted Crepe editor stays mounted underneath. That
         // avoids a full re-parse/image reload when switching back to rich.
-        const sourceForActiveRich = (sourceMode || isSourceRichSplit) && isLeft && !plainText && !heavyAsSource
+        const sourceForActiveRich = (sourceMode || isSourceRichSplit) && isLeft && !plainText && !heavyAsSource && !excalidrawDoc
         const usesTextarea = plainText || heavyAsSource || sourceForActiveRich
         // content-visibility virtualization (see .hm-cv in app.css) is reserved
         // for genuinely huge RICH documents. Medium CJK-heavy docs have enough
         // text to be expensive on Windows, but too few blocks for CV to pay for
         // its estimate-to-real height churn; they use layout containment instead.
-        const richEligible = !plainText && !heavyAsSource
+        const richEligible = !plainText && !heavyAsSource && !excalidrawDoc
         const largeRich = richEligible && shouldUseRichContentVisibility(tab.content || '')
         const nodes = []
+
+        if (excalidrawDoc && shouldMountExcalidraw) {
+          const setExcalidrawHost = (el) => {
+            if (el) {
+              editorHosts.current[tab.id] = el
+              if (isLeft) editorHostRef.current = el
+              return
+            }
+            const existing = editorHosts.current[tab.id]
+            delete editorHosts.current[tab.id]
+            if (isLeft && (!existing || editorHostRef.current === existing)) editorHostRef.current = null
+          }
+          nodes.push(
+            <div
+              key={`excalidraw:${tab.id}:${tab.reloadNonce}`}
+              className={`editor-scroll excalidraw-scroll${paneClass}`}
+              ref={setExcalidrawHost}
+              style={{ display: inView ? undefined : 'none', order, flex: paneFlex }}
+              onFocusCapture={() => onPaneFocus('rich')}
+              onMouseDownCapture={() => onPaneFocus('rich')}
+            >
+              {excalidrawEnabled ? (
+                <Suspense fallback={editorChunkFallback}>
+                  <ExcalidrawEditor
+                    tab={tab}
+                    onChange={(json) => updateContent(tab.id, json, false)}
+                    registerApi={(api) => registerEditorApi(tab.id, api)}
+                  />
+                </Suspense>
+              ) : (
+                <div className="excalidraw-mobile-placeholder" role="status">
+                  {t('excalidraw.mobilePlaceholder')}
+                </div>
+              )}
+            </div>
+          )
+        }
 
         if (usesTextarea && inView) {
           const initialSource = liveContentRef.current.get(tab.id) ?? tab.content
