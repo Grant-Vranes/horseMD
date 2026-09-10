@@ -20,6 +20,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 // the extension test used while scanning folders / launch args.
 const MD_EXTS = ['md', 'markdown', 'mdx', 'txt']
 const MD_RE = new RegExp(`\\.(${MD_EXTS.join('|')})$`, 'i')
+// Openable file types: open-dialog filter, launch args, sidebar tree.
+// Superset of MD_EXTS — .excalidraw opens in the canvas editor but must stay
+// OUT of global search (registerGlobalSearchIpc keeps MD_RE below).
+const FILE_EXTS = [...MD_EXTS, 'excalidraw']
+const FILE_RE = new RegExp(`\\.(${FILE_EXTS.join('|')})$`, 'i')
 const backgroundTestMode = process.argv.includes('--horsemd-test-background')
 const inputTraceEnabled = process.argv.includes('--horsemd-input-trace')
 
@@ -120,9 +125,10 @@ function enqueueLaunch(files = [], folders = []) {
   }
 }
 
-// Split launch args into markdown files and folders. A folder argument (from
-// the Explorer "Open with HorseMD" folder menu) opens as a workspace; markdown
-// files open as tabs. Non-existent paths and flags are ignored.
+// Split launch args into files and folders. A folder argument (from
+// the Explorer "Open with HorseMD" folder menu) opens as a workspace;
+// openable files (markdown + excalidraw) open as tabs. Non-existent paths
+// and flags are ignored.
 function extractArgs(argv) {
   const files = []
   const folders = []
@@ -148,7 +154,7 @@ function extractArgs(argv) {
       continue
     }
     if (st.isDirectory()) folders.push(abs)
-    else if (MD_RE.test(abs)) files.push(abs)
+    else if (FILE_RE.test(abs)) files.push(abs)
   }
   return { files, folders }
 }
@@ -333,14 +339,14 @@ app.on('window-all-closed', () => {
 registerDocumentIpc(ipcMain, {
   getMainWindow: () => mainWindow,
   getUserDataPath: () => app.getPath('userData'),
-  markdownExtensions: MD_EXTS,
+  markdownExtensions: FILE_EXTS,
   isTrustedSender: (event) => !!mainWindow && event.sender.id === mainWindow.webContents.id
 })
 
-registerFileSystemIpc(ipcMain, { shell, markdownPattern: MD_RE })
+registerFileSystemIpc(ipcMain, { shell, markdownPattern: FILE_RE })
 
-// Workspace-wide content search (issue #120) — same markdownPattern so the
-// search scope is exactly what the sidebar tree shows.
+// Workspace-wide content search (issue #120) — deliberately keeps MD_RE so
+// .excalidraw scene JSON is never searched.
 registerGlobalSearchIpc(ipcMain, { markdownPattern: MD_RE })
 
 registerSyncWorkspaceIpc(ipcMain, {

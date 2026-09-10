@@ -89,7 +89,15 @@ export const joinPath = (dir, name) => `${dir.replace(/[\\/]+$/, '')}/${name}`
 // text through Milkdown collapses its line breaks and bogs down on large files.
 export const MD_DOC_RE = /\.(md|markdown|mdx)$/i
 export const isMarkdownName = (name) => MD_DOC_RE.test(name || '')
-export const isPlainTextDoc = (tab) => !!(tab && tab.path && !MD_DOC_RE.test(tab.path))
+
+// Excalidraw whiteboards: standalone scene-JSON files opened in the official
+// canvas editor (lazy chunk). They are NOT plain-text docs (the textarea must
+// not capture them) and are excluded from global search by the main process.
+export const EXCALIDRAW_RE = /\.excalidraw$/i
+export const isExcalidrawName = (name) => EXCALIDRAW_RE.test(name || '')
+
+export const isPlainTextDoc = (tab) =>
+  !!(tab && tab.path && !MD_DOC_RE.test(tab.path) && !EXCALIDRAW_RE.test(tab.path))
 
 // A valid single path-segment name: no separators / reserved chars, not "."/"..".
 export const isValidName = (name) => !!name && !/[\\/:*?"<>|]/.test(name) && name !== '.' && name !== '..'
