@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.13.206] - 2026-09-11
+
+### Added
+- **新增 Excalidraw 白板支持（桌面独占）** — `.excalidraw` 文件现在以独立白板标签页打开，使用 Excalidraw 官方画布编辑器直接编辑；保存仍是标准 `.excalidraw` JSON，可与 Excalidraw 等工具互用。侧边栏新增「新建白板」入口（能力门控，移动端隐藏）；保存模型与普通文档一致（脏标记 / `Cmd/Ctrl+S` / 关闭确认 / 外部修改警告）；支持通过文件菜单、标签页右键或命令面板把当前白板导出为 PNG / SVG 图片；损坏的 `.excalidraw` 文件会降级为空白画布并一次性提示；白板内容不进入全局搜索。
+
 ### Known Issues
 - **富文本 / 源码长会话仍可能分叉（P0）** — 0.13.47 的 `/code` 原子同步修复通过了家族矩阵、多轮持久化和代码块专项，但安装包人工验收仍能在真实长文档中复现：建立代码块后继续多轮编辑，富文本新增内容可能没有完整进入源码或磁盘；保存既可能暂停，也可能执行成功但内容仍不一致。该问题尚未关闭，禁止把当前候选描述为稳定修复。接手记录见 [`docs/rich-source-divergence-incident-0.13.47.md`](./docs/rich-source-divergence-incident-0.13.47.md)。
 
