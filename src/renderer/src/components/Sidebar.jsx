@@ -10,6 +10,7 @@ import {
   normalizePathKey
 } from '../paths.js'
 import { copyToClipboard } from '../ui.js'
+import { EMPTY_EXCALIDRAW_SCENE } from '../lib/excalidraw-scene.js'
 import { useSidebarTree } from '../hooks/useSidebarTree.js'
 import SidebarContextMenu from './SidebarContextMenu.jsx'
 
@@ -80,9 +81,18 @@ export default function Sidebar({
   const startNewFile = (dirNode) => {
     const dir = dirNode ? dirNode.path : defaultRoot
     if (!dir) return
-    setCreating({ dir, type: 'file', value: 'untitled.md' })
+    setCreating({ dir, type: 'file', value: 'untitled.md', defaultExt: '.md' })
     // The root is rendered as a normal tree node in a multi-root workspace.
     // Ensure it is visible before mounting its single inline creation field.
+    setExpanded((s) => new Set(s).add(dir))
+    if (!childrenMap[dir]) loadDir(dir)
+  }
+
+  // Start inline creation for an excalidraw whiteboard
+  const startNewWhiteboard = (dirNode) => {
+    const dir = dirNode ? dirNode.path : defaultRoot
+    if (!dir) return
+    setCreating({ dir, type: 'file', value: 'untitled.excalidraw', defaultExt: '.excalidraw' })
     setExpanded((s) => new Set(s).add(dir))
     if (!childrenMap[dir]) loadDir(dir)
   }
@@ -100,7 +110,7 @@ export default function Sidebar({
   const commitCreate = async () => {
     if (!creating || committingRef.current) return
     committingRef.current = true
-    const { dir, type, value } = creating
+    const { dir, type, value, defaultExt } = creating
     const name = value.trim()
     setCreating(null)
     if (!name) {
@@ -116,9 +126,12 @@ export default function Sidebar({
     try {
       if (type === 'file') {
         let fileName = name
-        if (!/\.[a-z0-9]+$/i.test(fileName)) fileName += '.md'
+        if (!/\.[a-z0-9]+$/i.test(fileName)) fileName += defaultExt || '.md'
         const path = join(dir, fileName)
-        await window.api.createFile(path, '')
+        await window.api.createFile(
+          path,
+          fileName.toLowerCase().endsWith('.excalidraw') ? EMPTY_EXCALIDRAW_SCENE : ''
+        )
         await loadDir(dir)
         onOpenFile(path)
       } else {
@@ -422,6 +435,11 @@ export default function Sidebar({
           <button title={t('side.newFile')} onClick={() => startNewFile(null)}>
             <Icon name="file-plus" size={15} />
           </button>
+          {window.api?.capabilities?.excalidraw && (
+            <button title={t('side.newWhiteboard')} onClick={() => startNewWhiteboard(null)}>
+              <Icon name="whiteboard" size={15} />
+            </button>
+          )}
           <button title={t('side.newFolder')} onClick={() => startNewFolder(null)}>
             <Icon name="folder-plus" size={15} />
           </button>
