@@ -287,6 +287,7 @@ const capabilities = {
   windowControls: false,
   devtools: false,
   pdfExport: false, // no print-to-PDF save dialog on mobile
+  excalidraw: false, // whiteboard canvas is desktop-only
   htmlExport: false,
   pandocExport: false,
   imageHostExec: false,

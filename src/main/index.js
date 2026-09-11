@@ -16,8 +16,8 @@ import { defaultMenuAcceleratorFor, menuAcceleratorFor, normalizeMenuKeybindingP
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-// Supported Markdown file types — single source for the open-dialog filter and
-// the extension test used while scanning folders / launch args.
+// Text-document extensions that drive global search classification (MD_RE is
+// passed to registerGlobalSearchIpc); open/tree use the FILE_EXTS superset.
 const MD_EXTS = ['md', 'markdown', 'mdx', 'txt']
 const MD_RE = new RegExp(`\\.(${MD_EXTS.join('|')})$`, 'i')
 // Openable file types: open-dialog filter, launch args, sidebar tree.
