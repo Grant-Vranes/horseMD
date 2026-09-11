@@ -572,6 +572,12 @@ export default function App() {
   const getSettledMarkdownForTab = useCallback(async (id) => {
     const sourceElement = sourceTextareas.current[id]
     if (sourceElement) return getTextareaSourceValue(sourceElement)
+    // Excalidraw durability boundary: serialize the LIVE scene. The whiteboard
+    // api has no flushMarkdown — without this branch saveTab would hit the
+    // rich-editor null path and abort with save.sourceSyncFailed (same rule
+    // as getMarkdownForTab above).
+    const anyEditorApi = editorApis.current[id]
+    if (anyEditorApi?.getSceneJson) return anyEditorApi.getSceneJson()
     const editorApi = editorApis.current[id]
     if (!editorApi) return tabsRef.current.find((tab) => tab.id === id)?.content || ''
     if (typeof editorApi.flushMarkdownSettled === 'function') {

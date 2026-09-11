@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 - **新增 Excalidraw 白板支持（桌面独占）** — `.excalidraw` 文件现在以独立白板标签页打开，使用 Excalidraw 官方画布编辑器直接编辑；保存仍是标准 `.excalidraw` JSON，可与 Excalidraw 等工具互用。侧边栏新增「新建白板」入口（能力门控，移动端隐藏）；保存模型与普通文档一致（脏标记 / `Cmd/Ctrl+S` / 关闭确认 / 外部修改警告）；支持通过文件菜单、标签页右键或命令面板把当前白板导出为 PNG / SVG 图片；损坏的 `.excalidraw` 文件会降级为空白画布并一次性提示；白板内容不进入全局搜索。
 
+### Fixed
+- **打开未编辑的 `.excalidraw` 不再误标脏** — Excalidraw 画布挂载时会连发数次 onChange（恢复初始数据、字体加载等），此前会被当作编辑触发防抖序列化，刚打开的白板即出现未保存标记；现以首次序列化为基线并对相同输出去重，重开已保存文件不再出现假脏标记。
+- **修复白板保存被暂停（`save.sourceSyncFailed`）** — `saveTab` 实际走 `getSettledMarkdownForTab`，而白板的实时场景序列化分支此前只加在 `getMarkdownForTab`，导致 `Cmd/Ctrl+S` 保存白板时误入富文本 null 路径并弹「保存已暂停」；现已在该保存路径接入 `getSceneJson`，白板可正常保存。
+
 ### Known Issues
 - **富文本 / 源码长会话仍可能分叉（P0）** — 0.13.47 的 `/code` 原子同步修复通过了家族矩阵、多轮持久化和代码块专项，但安装包人工验收仍能在真实长文档中复现：建立代码块后继续多轮编辑，富文本新增内容可能没有完整进入源码或磁盘；保存既可能暂停，也可能执行成功但内容仍不一致。该问题尚未关闭，禁止把当前候选描述为稳定修复。接手记录见 [`docs/rich-source-divergence-incident-0.13.47.md`](./docs/rich-source-divergence-incident-0.13.47.md)。
 

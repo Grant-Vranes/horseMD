@@ -28,17 +28,36 @@ export default function ExcalidrawEditor({ tab, onChange, registerApi }) {
   const [corrupt] = useState(() => initial === null && !!(tab.content || '').trim())
   const latestRef = useRef(initial || { elements: [], appState: {}, files: {} })
   const timerRef = useRef(null)
+  // Excalidraw fires several onChange bursts while mounting (restore, font
+  // load, appState init) — none of them are user edits, and they all serialize
+  // identically. The first observed serialization becomes the baseline;
+  // anything that serializes identically to the last baseline never publishes,
+  // so untouched reopen and viewport churn never mark the tab dirty.
+  const lastBaselineRef = useRef(null)
 
   // Debounced onChange → parent. serializeAsJSON output is stable for an
   // untouched scene, so reopening a saved file does not spuriously mark dirty.
   const handleSceneChange = useCallback(
     (elements, appState, files) => {
       latestRef.current = { elements, appState, files }
+      try {
+        const json = serializeScene(latestRef.current)
+        if (lastBaselineRef.current === null) {
+          // First observation after mount: baseline, not an edit.
+          lastBaselineRef.current = json
+          return
+        }
+      } catch {
+        // Fall through to the debounced path; serialization is retried there.
+      }
       if (timerRef.current) clearTimeout(timerRef.current)
       timerRef.current = setTimeout(() => {
         timerRef.current = null
         try {
-          onChange?.(serializeScene(latestRef.current))
+          const json = serializeScene(latestRef.current)
+          if (json === lastBaselineRef.current) return
+          lastBaselineRef.current = json
+          onChange?.(json)
         } catch {
           // A serialization hiccup must not crash the canvas; the next
           // interaction retries.
@@ -55,7 +74,11 @@ export default function ExcalidrawEditor({ tab, onChange, registerApi }) {
       clearTimeout(timerRef.current)
       timerRef.current = null
       try {
-        onChange?.(serializeScene(latestRef.current))
+        const json = serializeScene(latestRef.current)
+        if (json !== lastBaselineRef.current) {
+          lastBaselineRef.current = json
+          onChange?.(json)
+        }
       } catch {
         // Unusable scene at unmount is dropped — the save path would have
         // aborted on it anyway.

@@ -110,6 +110,7 @@
     "test:literal-triple-backtick-parser": "node scripts/test-literal-triple-backtick-parser.mjs",
     "test:literal-triple-backtick-source-ui": "node scripts/test-literal-triple-backtick-source-ui.mjs",
     "test:issue-98-ui": "node scripts/test-issue-98-copy-undo-ui.mjs && node scripts/test-session-restore-setting-ui.mjs",
+    "test:excalidraw-ui": "node scripts/test-excalidraw-ui.mjs",
     "test:frontmatter-ui": "node scripts/test-frontmatter-edit-ui.mjs",
     "test:mobile-read-only": "node scripts/test-mobile-read-only.mjs",
     "test:ui-layout": "node scripts/test-menu-position.mjs",
