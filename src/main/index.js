@@ -1,6 +1,6 @@
-import { app, BrowserWindow, ipcMain, Menu, shell, net, safeStorage, session, clipboard } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu, protocol, shell, net, safeStorage, session, clipboard } from 'electron'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { dirname, join, basename, extname, resolve, sep } from 'node:path'
+import { dirname, join, basename, extname, normalize, resolve, sep } from 'node:path'
 import fs from 'node:fs/promises'
 import { existsSync, statSync, realpathSync, constants as fsConstants } from 'node:fs'
 import { exec } from 'node:child_process'
@@ -21,10 +21,16 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const MD_EXTS = ['md', 'markdown', 'mdx', 'txt']
 const MD_RE = new RegExp(`\\.(${MD_EXTS.join('|')})$`, 'i')
 // Openable file types: open-dialog filter, launch args, sidebar tree.
-// Superset of MD_EXTS — .excalidraw opens in the canvas editor but must stay
-// OUT of global search (registerGlobalSearchIpc keeps MD_RE below).
-const FILE_EXTS = [...MD_EXTS, 'excalidraw']
+// Superset of MD_EXTS — .excalidraw/.drawio open in canvas editors but must
+// stay OUT of global search (registerGlobalSearchIpc keeps MD_RE below).
+const FILE_EXTS = [...MD_EXTS, 'excalidraw', 'drawio']
 const FILE_RE = new RegExp(`\\.(${FILE_EXTS.join('|')})$`, 'i')
+// diagrams.net editor iframe (see registerDrawioProtocol). standard+secure so
+// the iframe has a real origin ("drawio-local://editor") for postMessage
+// targetOrigin checks; supportFetchAPI lets the webapp fetch its own assets.
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'drawio-local', privileges: { standard: true, secure: true, supportFetchAPI: true } }
+])
 const backgroundTestMode = process.argv.includes('--horsemd-test-background')
 const inputTraceEnabled = process.argv.includes('--horsemd-input-trace')
 
@@ -127,7 +133,7 @@ function enqueueLaunch(files = [], folders = []) {
 
 // Split launch args into files and folders. A folder argument (from
 // the Explorer "Open with HorseMD" folder menu) opens as a workspace;
-// openable files (markdown + excalidraw) open as tabs. Non-existent paths
+// openable files (markdown + excalidraw + drawio) open as tabs. Non-existent paths
 // and flags are ignored.
 function extractArgs(argv) {
   const files = []
@@ -280,6 +286,27 @@ app.on('open-file', (event, path) => {
   }
 })
 
+// Serves the vendored diagrams.net webapp (resources/drawio, unpacked by
+// scripts/fetch-drawio.mjs) over drawio-local://editor/... for the editor
+// iframe. File reads are confined to the drawio root via path normalization.
+function registerDrawioProtocol() {
+  const drawioRoot = app.isPackaged
+    ? join(process.resourcesPath, 'drawio')
+    : join(app.getAppPath(), 'resources', 'drawio')
+
+  protocol.handle('drawio-local', (request) => {
+    const url = new URL(request.url)
+    // Standard-scheme URLs are drawio-local://<host>/<path>; everything is
+    // served from the host "editor" so the iframe origin is stable.
+    const relPath = decodeURIComponent(url.pathname).replace(/^\/+/, '') || 'index.html'
+    const filePath = normalize(join(drawioRoot, relPath))
+    if (!filePath.startsWith(normalize(drawioRoot + sep))) {
+      return new Response('Forbidden', { status: 403 })
+    }
+    return net.fetch(pathToFileURL(filePath).toString())
+  })
+}
+
 app.whenReady().then(() => {
   // Win/Linux: argv carries the launched file/folder. Merge into the launch
   // queue (macOS open-file events already pushed above). Delivered on the
@@ -310,6 +337,23 @@ app.whenReady().then(() => {
     allowLocalFonts(webContents, permission, details?.requestingUrl || requestingOrigin, details?.isMainFrame)
   )
   createWindow()
+  registerDrawioProtocol()
+
+  // Renderer asks for the packaged editor iframe URL. lang is 'zh' | 'en'
+  // (anything unknown falls back to 'en').
+  ipcMain.handle('drawio:getEditorUrl', (event, lang) => {
+    const safeLang = lang === 'zh' ? 'zh' : 'en'
+    const params = new URLSearchParams({
+      embed: '1',
+      proto: 'json',
+      ui: 'min',
+      noExitBtn: '1',
+      spin: '1',
+      lang: safeLang
+    })
+    return `drawio-local://editor/index.html?${params.toString()}`
+  })
+
   if (inputTraceEnabled) {
     console.log(`HorseMD input trace: ${inputTracePath()}`)
   }
