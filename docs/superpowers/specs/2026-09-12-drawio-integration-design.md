@@ -42,7 +42,7 @@
   映射到该目录。**不用 file:// iframe**：dev 模式 renderer 跑在 localhost，
   file:// iframe 会被拦截；统一协议让 dev/prod 行为一致。
 - renderer 通过 IPC `window.api.drawio.getEditorUrl()` 获取 iframe 地址：
-  `drawio-local://index.html?embed=1&proto=json&configure=1&autosave=1&ui=min&noExitBtn=1&spin=1&lang=<zh|en>`
+  `drawio-local://editor/index.html?embed=1&proto=json&autosave=1&ui=min&noExitBtn=1&spin=1&lang=<zh|en>`
   （lang 跟随应用 i18n 语言）。
 - 预期 `resources/drawio/` 原始体积约 54MB（官方 draw.war 解包后），安装包
   经压缩后增量更小；`resources/drawio/` 不入库，由获取脚本按 pin 版本下载。
@@ -51,8 +51,7 @@
 
 - `src/renderer/src/components/DrawioEditor.jsx`：仅由 `EditorArea` 经 `lazy()`
   挂载的独立 chunk（组件 + iframe + postMessage 通道），主编辑器 chunk 不评估它。
-- 生命周期：iframe 发 `init` → 宿主发 `configure {autosave: 1}` → 宿主发
-  `load {xml: tab.content}`。
+- 生命周期：iframe 发 `init` → 宿主发 `load {xml: tab.content, autosave: 1}`。
 - 收 `save {xml}` → `onChange(xml)`。照搬 Excalidraw 的基线防脏标记：
   首次收到的序列化结果为基线（reopen / 视口变化不脏），其后与基线不同的
   save 才是用户编辑；dirty 判定仍由 tab-state 负责。
