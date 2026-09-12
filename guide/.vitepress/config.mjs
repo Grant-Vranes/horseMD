@@ -69,7 +69,8 @@ export default defineConfig({
           { text: '公式与 Mermaid', link: '/editing/math-and-mermaid' },
           { text: '图片与图床', link: '/editing/images' },
           { text: '链接与附件', link: '/editing/links-and-attachments' },
-          { text: 'Excalidraw 白板', link: '/editing/whiteboard' }
+          { text: 'Excalidraw 白板', link: '/editing/whiteboard' },
+          { text: 'drawio 图表', link: '/editing/drawio' }
         ]
       },
       {

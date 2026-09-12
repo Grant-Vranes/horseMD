@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.13.208] - 2026-09-12
+
+### Added
+- **新增 drawio 图表支持（桌面独占）** — `.drawio` 文件现在以独立图表标签页打开，内嵌本地打包的 diagrams.net（drawio）编辑器，完全离线可用；支持多页文档，XML 原样保留，保存仍是标准 `.drawio` 文件，可与 draw.io/diagrams.net 互用。侧边栏新增「新建绘图」入口（能力门控，移动端隐藏）；保存模型与普通文档一致（脏标记 / `Cmd/Ctrl+S` / 关闭确认 / 外部修改警告）；支持通过标签页右键或命令面板把当前图表导出为 PNG / SVG；损坏的 `.drawio` 文件会降级为空白画布并一次性提示；图表内容不进入全局搜索。
+
+
 ## [0.13.207] - 2026-09-12
 
 ### Fixed

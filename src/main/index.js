@@ -290,9 +290,15 @@ app.on('open-file', (event, path) => {
 // scripts/fetch-drawio.mjs) over drawio-local://editor/... for the editor
 // iframe. File reads are confined to the drawio root via path normalization.
 function registerDrawioProtocol() {
-  const drawioRoot = app.isPackaged
-    ? join(process.resourcesPath, 'drawio')
-    : join(app.getAppPath(), 'resources', 'drawio')
+  // Packaged: electron-builder extraResources copies resources/drawio next to
+  // app.asar. Dev: app.getAppPath() is the repo root for `electron .` /
+  // `npm start`, but the CDP test harness launches out/main/index.cjs
+  // directly, making getAppPath() out/main — so also try the bundle-relative
+  // path and pick whichever candidate actually contains index.html.
+  const candidates = app.isPackaged
+    ? [join(process.resourcesPath, 'drawio')]
+    : [join(app.getAppPath(), 'resources', 'drawio'), resolve(__dirname, '../../resources/drawio')]
+  const drawioRoot = candidates.find((p) => existsSync(join(p, 'index.html'))) || candidates[0]
 
   protocol.handle('drawio-local', (request) => {
     const url = new URL(request.url)
@@ -336,8 +342,8 @@ app.whenReady().then(() => {
   session.defaultSession.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) =>
     allowLocalFonts(webContents, permission, details?.requestingUrl || requestingOrigin, details?.isMainFrame)
   )
-  createWindow()
   registerDrawioProtocol()
+  createWindow()
 
   // Renderer asks for the packaged editor iframe URL. lang is 'zh' | 'en'
   // (anything unknown falls back to 'en').
