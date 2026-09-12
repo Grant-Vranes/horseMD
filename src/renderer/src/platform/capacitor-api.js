@@ -288,6 +288,7 @@ const capabilities = {
   devtools: false,
   pdfExport: false, // no print-to-PDF save dialog on mobile
   excalidraw: false, // whiteboard canvas is desktop-only
+  drawio: false, // diagrams.net editor iframe is desktop-only
   htmlExport: false,
   pandocExport: false,
   imageHostExec: false,

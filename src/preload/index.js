@@ -37,6 +37,12 @@ const api = {
   readFile: (path) => ipcRenderer.invoke('fs:readFile', path),
   writeFile: (path, content) => ipcRenderer.invoke('fs:writeFile', path, content),
   writeBinary: (path, base64) => ipcRenderer.invoke('fs:writeBinary', path, base64),
+
+  // drawio (diagrams.net local embed). getEditorUrl resolves to a
+  // drawio-local://editor/... URL served by the main-process protocol.
+  drawio: {
+    getEditorUrl: (lang) => ipcRenderer.invoke('drawio:getEditorUrl', lang)
+  },
   rename: (oldPath, newPath) => ipcRenderer.invoke('fs:rename', oldPath, newPath),
   deleteItem: (path) => ipcRenderer.invoke('fs:delete', path),
   createFile: (path, content) => ipcRenderer.invoke('fs:createFile', path, content),
@@ -167,7 +173,8 @@ const api = {
     fileAttachments: true,
     cloudSync: true,
     nativeDropOpen: true,
-    excalidraw: true
+    excalidraw: true,
+    drawio: true
   }
 }
 
