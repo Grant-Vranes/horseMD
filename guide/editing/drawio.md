@@ -22,7 +22,7 @@ HorseMD 支持直接打开和编辑 [draw.io / diagrams.net](https://www.drawio.
 - **多页文档**：底部页面标签可以添加、复制和切换页面，保存时全部保留
 - **文本与样式**：右侧面板调整填充、边框、字体
 
-编辑器以精简模式运行，可以按 draw.io 的习惯操作。
+编辑器界面与 [app.diagrams.net](https://app.diagrams.net) 一致：完整菜单栏、工具栏、左侧形状库和右侧样式面板，可以按 draw.io 的习惯操作。
 
 ## 保存
 

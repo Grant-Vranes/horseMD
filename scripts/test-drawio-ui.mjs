@@ -105,8 +105,10 @@ try {
     await evaluate(`![...document.querySelectorAll('.tab-close.dirty')].some((n) => n.offsetParent)`),
     'untouched drawio tab should not be dirty'
   )
-  assert.ok(
-    await evaluate(`window.__hmDrawioApi && window.__hmDrawioApi.isReady() === true`),
+  // kennedy UI loads noticeably more JS than ui=min, so after a remount the
+  // re-handshake can take >10s — wait for readiness instead of asserting it.
+  await waitFor(
+    () => evaluate(`window.__hmDrawioApi && window.__hmDrawioApi.isReady() === true`),
     'test api missing or drawio editor not ready'
   )
   await evaluate(`window.__hmDrawioApi.simulateChange(${JSON.stringify(NEW_XML)})`)

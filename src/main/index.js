@@ -352,7 +352,9 @@ app.whenReady().then(() => {
     const params = new URLSearchParams({
       embed: '1',
       proto: 'json',
-      ui: 'min',
+      // ui=kennedy matches the default app.diagrams.net experience (full
+      // menu bar, toolbar, shape libraries, format panel) inside the iframe.
+      ui: 'kennedy',
       noExitBtn: '1',
       spin: '1',
       lang: safeLang

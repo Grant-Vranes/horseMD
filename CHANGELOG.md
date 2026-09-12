@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.13.209] - 2026-09-12
+
+### Changed
+- drawio 图表编辑器界面改为与官方 app.diagrams.net 一致的完整 UI（菜单栏、工具栏、形状库、样式面板），替代之前的精简模式。
+
 ## [0.13.208] - 2026-09-12
 
 ### Added
