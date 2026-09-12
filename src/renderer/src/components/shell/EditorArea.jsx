@@ -13,13 +13,17 @@
 // main bundle evaluates. The editor mounts inside Suspense — until the chunk
 // arrives a static pane skeleton shows, then the existing loading skeleton and
 // chunked-load flow take over exactly as before.
-const Editor = lazy(() => import('../Editor.jsx'))
-const ExcalidrawEditor = lazy(() => import('../ExcalidrawEditor.jsx'))
+import { Suspense, lazy, useRef } from 'react'
 import { Icon } from '../icons.jsx'
 import { isExcalidrawName, isPlainTextDoc, shouldUseRichContentVisibility } from '../../paths.js'
 import { attachSourceCaret } from '../editor-source-caret.js'
 import { updateTextareaSourceFromDom } from '../../source-text-fidelity.js'
-import { Suspense, lazy, useRef } from 'react'
+
+// Lazy calls must stay BELOW the react import: in dev, Vite's CJS interop
+// emits `const lazy = …` at the import's position, so calling lazy() above it
+// throws "Cannot access 'lazy' before initialization" and black-screens dev.
+const Editor = lazy(() => import('../Editor.jsx'))
+const ExcalidrawEditor = lazy(() => import('../ExcalidrawEditor.jsx'))
 
 const editorChunkFallback = (
   <div className="editor-skeleton" aria-hidden="true">

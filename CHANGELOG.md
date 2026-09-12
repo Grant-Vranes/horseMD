@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.13.207] - 2026-09-12
+
+### Fixed
+- **修复 `npm run dev` 黑屏** — `4edbc9c`（Excalidraw 功能）在 `EditorArea.jsx` 中把 `lazy()` 调用放在了 `import { lazy } from 'react'` 之前，dev 模式下 Vite 的 CJS interop 按语句顺序求值，触发 TDZ 错误 `Cannot access 'lazy' before initialization`，React 无法挂载导致窗口黑屏。已将 react import 移至 lazy 调用之前并加注释防止回归；生产构建不受影响，仅 dev 模式崩溃。
+
 ## [0.13.206] - 2026-09-11
 
 ### Added
