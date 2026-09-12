@@ -23,6 +23,7 @@
     "dist:dir": "node scripts/fetch-drawio.mjs && electron-vite build && electron-builder --dir",
     "build:mobile": "vite build --config vite.mobile.config.mjs",
     "shortcuts:inventory": "node scripts/export-shortcut-inventory.mjs",
+    "test:drawio-file": "node scripts/test-drawio-file.mjs",
     "test:source-map": "node scripts/test-editor-source-map.mjs",
     "test:mode-switch-raw-offset-ui": "node scripts/test-mode-switch-raw-offset-ui.mjs",
     "test:codeblock-scroll-stability-ui": "node scripts/test-codeblock-scroll-stability-ui.mjs",

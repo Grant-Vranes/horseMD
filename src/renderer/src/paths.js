@@ -90,14 +90,17 @@ export const joinPath = (dir, name) => `${dir.replace(/[\\/]+$/, '')}/${name}`
 export const MD_DOC_RE = /\.(md|markdown|mdx)$/i
 export const isMarkdownName = (name) => MD_DOC_RE.test(name || '')
 
-// Excalidraw whiteboards: standalone scene-JSON files opened in the official
-// canvas editor (lazy chunk). They are NOT plain-text docs (the textarea must
-// not capture them) and are excluded from global search by the main process.
+// Excalidraw whiteboards and drawio diagrams: standalone files opened in
+// dedicated canvas editors (lazy chunks). They are NOT plain-text docs (the
+// textarea must not capture them) and are excluded from global search by the
+// main process.
 export const EXCALIDRAW_RE = /\.excalidraw$/i
 export const isExcalidrawName = (name) => EXCALIDRAW_RE.test(name || '')
+export const DRAWIO_RE = /\.drawio$/i
+export const isDrawioName = (name) => DRAWIO_RE.test(name || '')
 
 export const isPlainTextDoc = (tab) =>
-  !!(tab && tab.path && !MD_DOC_RE.test(tab.path) && !EXCALIDRAW_RE.test(tab.path))
+  !!(tab && tab.path && !MD_DOC_RE.test(tab.path) && !EXCALIDRAW_RE.test(tab.path) && !DRAWIO_RE.test(tab.path))
 
 // A valid single path-segment name: no separators / reserved chars, not "."/"..".
 export const isValidName = (name) => !!name && !/[\\/:*?"<>|]/.test(name) && name !== '.' && name !== '..'
