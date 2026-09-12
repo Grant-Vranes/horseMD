@@ -15,7 +15,7 @@
 // chunked-load flow take over exactly as before.
 import { Suspense, lazy, useRef } from 'react'
 import { Icon } from '../icons.jsx'
-import { isExcalidrawName, isPlainTextDoc, shouldUseRichContentVisibility } from '../../paths.js'
+import { isDrawioName, isExcalidrawName, isPlainTextDoc, shouldUseRichContentVisibility } from '../../paths.js'
 import { attachSourceCaret } from '../editor-source-caret.js'
 import { updateTextareaSourceFromDom } from '../../source-text-fidelity.js'
 
@@ -24,6 +24,7 @@ import { updateTextareaSourceFromDom } from '../../source-text-fidelity.js'
 // throws "Cannot access 'lazy' before initialization" and black-screens dev.
 const Editor = lazy(() => import('../Editor.jsx'))
 const ExcalidrawEditor = lazy(() => import('../ExcalidrawEditor.jsx'))
+const DrawioEditor = lazy(() => import('../DrawioEditor.jsx'))
 
 const editorChunkFallback = (
   <div className="editor-skeleton" aria-hidden="true">
@@ -119,9 +120,11 @@ export default function EditorArea({
         const heavyAsSource = tab.heavy && !richForced.has(tab.id)
         const plainText = isPlainTextDoc(tab)
         const excalidrawDoc = isExcalidrawName(tab.path)
+        const drawioDoc = isDrawioName(tab.path)
+        const drawioEnabled = window.api?.capabilities?.drawio === true
         const shouldMountExcalidraw = excalidrawDoc && (inView || mountedIds.has(tab.id))
         const excalidrawEnabled = window.api?.capabilities?.excalidraw === true
-        const isSourceRichSplit = sourceRichSplitMode && isLeft && !plainText && !heavyAsSource && !excalidrawDoc
+        const isSourceRichSplit = sourceRichSplitMode && isLeft && !plainText && !heavyAsSource && !excalidrawDoc && !drawioDoc
         const onPaneFocus = (pane = null) => {
           focusedTabRef.current = tab.id
           if (split) setFocusedPane(isRight ? 'right' : 'left')
@@ -143,13 +146,13 @@ export default function EditorArea({
         // In global source mode the active Markdown pane shows a textarea too,
         // but its already-mounted Crepe editor stays mounted underneath. That
         // avoids a full re-parse/image reload when switching back to rich.
-        const sourceForActiveRich = (sourceMode || isSourceRichSplit) && isLeft && !plainText && !heavyAsSource && !excalidrawDoc
+        const sourceForActiveRich = (sourceMode || isSourceRichSplit) && isLeft && !plainText && !heavyAsSource && !excalidrawDoc && !drawioDoc
         const usesTextarea = plainText || heavyAsSource || sourceForActiveRich
         // content-visibility virtualization (see .hm-cv in app.css) is reserved
         // for genuinely huge RICH documents. Medium CJK-heavy docs have enough
         // text to be expensive on Windows, but too few blocks for CV to pay for
         // its estimate-to-real height churn; they use layout containment instead.
-        const richEligible = !plainText && !heavyAsSource && !excalidrawDoc
+        const richEligible = !plainText && !heavyAsSource && !excalidrawDoc && !drawioDoc
         const largeRich = richEligible && shouldUseRichContentVisibility(tab.content || '')
         const nodes = []
 
@@ -184,6 +187,43 @@ export default function EditorArea({
               ) : (
                 <div className="excalidraw-mobile-placeholder" role="status">
                   {t('excalidraw.mobilePlaceholder')}
+                </div>
+              )}
+            </div>
+          )
+        }
+
+        if (drawioDoc && (inView || mountedIds.has(tab.id))) {
+          const setDrawioHost = (el) => {
+            if (el) {
+              editorHosts.current[tab.id] = el
+              if (isLeft) editorHostRef.current = el
+              return
+            }
+            const existing = editorHosts.current[tab.id]
+            delete editorHosts.current[tab.id]
+            if (isLeft && (!existing || editorHostRef.current === existing)) editorHostRef.current = null
+          }
+          nodes.push(
+            <div
+              key={`drawio:${tab.id}:${tab.reloadNonce}`}
+              className={`editor-scroll drawio-scroll${paneClass}`}
+              ref={setDrawioHost}
+              style={{ display: inView ? undefined : 'none', order, flex: paneFlex }}
+              onFocusCapture={() => onPaneFocus('rich')}
+              onMouseDownCapture={() => onPaneFocus('rich')}
+            >
+              {drawioEnabled ? (
+                <Suspense fallback={editorChunkFallback}>
+                  <DrawioEditor
+                    tab={tab}
+                    onChange={(xml) => updateContent(tab.id, xml, false)}
+                    registerApi={(api) => registerEditorApi(tab.id, api)}
+                  />
+                </Suspense>
+              ) : (
+                <div className="excalidraw-mobile-placeholder" role="status">
+                  {t('drawio.mobilePlaceholder')}
                 </div>
               )}
             </div>
