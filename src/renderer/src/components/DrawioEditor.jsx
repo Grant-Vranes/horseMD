@@ -47,6 +47,12 @@ export default function DrawioEditor({ tab, onChange, registerApi }) {
   const timerRef = useRef(null)
   // Pending {action:'export'} requests keyed by format.
   const exportWaitersRef = useRef(new Map())
+  // Test-only: after simulateChange the host side deliberately diverges from
+  // the iframe (the test drives content without the canvas). While held,
+  // iframe autosave messages must not clobber latestXmlRef with the stale
+  // pre-test content — otherwise a save racing the next autosave tick writes
+  // the OLD xml back to disk.
+  const holdIframeSavesRef = useRef(false)
   const readyRef = useRef(false)
   const onChangeRef = useRef(onChange)
   onChangeRef.current = onChange
@@ -85,6 +91,7 @@ export default function DrawioEditor({ tab, onChange, registerApi }) {
       return
     }
     if (msg.event === 'save' && typeof msg.xml === 'string' && msg.xml.length > 0) {
+      if (holdIframeSavesRef.current) return
       latestXmlRef.current = msg.xml
       if (lastBaselineRef.current === null) {
         // First observation after mount: baseline, not an edit.
@@ -205,6 +212,7 @@ export default function DrawioEditor({ tab, onChange, registerApi }) {
     window.__hmDrawioApi = {
       simulateChange: (xml) => {
         latestXmlRef.current = xml
+        holdIframeSavesRef.current = true
         if (lastBaselineRef.current === null) {
           // No real drawio save observed yet (test-only path): the untouched
           // initial content is the baseline so this change registers as an
