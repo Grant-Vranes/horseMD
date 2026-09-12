@@ -7,6 +7,8 @@ const paths = {
   'file-plus': 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M12 12v6 M9 15h6',
   whiteboard:
     'M5 4h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z M12 17v3 M8 21h8 M9 11.6a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2z M13 12l3-3 2.5 2.5',
+  diagram:
+    'M3 3h6v6H3z M15 9h6v6h-6z M6 9v5a3 3 0 0 0 3 3h6 M12 17v4',
   folder: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
   'folder-open': 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2H3z M3 9h18l-2 9H5z',
   'folder-plus': 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M12 11v6 M9 14h6',

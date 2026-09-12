@@ -60,7 +60,7 @@ import { useSystemColorScheme } from './hooks/useSystemColorScheme.js'
 import { useDropOpen } from './hooks/useDropOpen.js'
 import { buildElectronAcceleratorPayload } from './lib/commands/electron-accelerators.js'
 import { createMenuHandlers, useGlobalKeys, useCommands } from './lib/menuHandlers.js'
-import { isAbsolutePath, isPlainTextDoc, isExcalidrawName, loadSession, loadFolderRootsFromSession } from './paths.js'
+import { isAbsolutePath, isPlainTextDoc, isExcalidrawName, isDrawioName, loadSession, loadFolderRootsFromSession } from './paths.js'
 import { blobToBase64 } from './lib/excalidraw-export.js'
 import { createReviewActions } from './lib/reviewActions.js'
 import { createEditorApiRegistry } from './lib/editor-api-registry.js'
@@ -531,6 +531,10 @@ export default function App() {
     // rather than resurrect stale tab.content (same rule as rich editors).
     const anyEditorApi = editorApis.current[id]
     if (anyEditorApi?.getSceneJson) return anyEditorApi.getSceneJson()
+    // Drawio durability boundary: the LIVE xml from the iframe channel — null
+    // means serialization failed and callers must abort rather than resurrect
+    // stale tab.content (same rule as the rich editors).
+    if (anyEditorApi?.getXml) return anyEditorApi.getXml()
     // Save/export is a durability boundary. Unlike a reading-only source-mode
     // toggle, it must serialize the live ProseMirror doc even when a custom
     // node view has not yet delivered its edit-intent callback.
@@ -569,6 +573,36 @@ export default function App() {
     }
   }, [editorApis, tabsRef, tRef])
 
+  const exportDrawioImage = useCallback(async (id, format) => {
+    const tab = tabsRef.current.find((x) => x.id === id)
+    if (!tab || !isDrawioName(tab.path)) return
+    const api = editorApis.current[id]
+    if (!api?.exportPng) {
+      window.alert(tRef.current('error.drawioExportUnavailable'))
+      return
+    }
+    const base = (tab.title || 'diagram').replace(/\.drawio$/i, '')
+    const target = await window.api.saveAs(`${base}.${format}`, {
+      filters: [{ name: format.toUpperCase(), extensions: [format] }]
+    })
+    if (!target) return
+    try {
+      const dataUrl = format === 'png' ? await api.exportPng() : await api.exportSvg()
+      if (format === 'png') {
+        // fs:writeBinary expects BARE base64 (no data: prefix) — same contract
+        // excalidraw's blobToBase64 honors (see lib/excalidraw-export.js).
+        await window.api.writeBinary(target, dataUrl.split(',')[1] || '')
+      } else {
+        // SVG arrives as a data URL; decode to UTF-8 text for writeFile.
+        const bin = atob(dataUrl.split(',')[1] || '')
+        const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0))
+        await window.api.writeFile(target, new TextDecoder().decode(bytes))
+      }
+    } catch (e) {
+      window.alert((tRef.current('error.exportFailed') || 'Export failed: ') + (e?.message || e))
+    }
+  }, [editorApis, tabsRef, tRef])
+
   const getSettledMarkdownForTab = useCallback(async (id) => {
     const sourceElement = sourceTextareas.current[id]
     if (sourceElement) return getTextareaSourceValue(sourceElement)
@@ -578,6 +612,8 @@ export default function App() {
     // as getMarkdownForTab above).
     const anyEditorApi = editorApis.current[id]
     if (anyEditorApi?.getSceneJson) return anyEditorApi.getSceneJson()
+    // Drawio durability boundary — same rule as getMarkdownForTab above.
+    if (anyEditorApi?.getXml) return anyEditorApi.getXml()
     const editorApi = editorApis.current[id]
     if (!editorApi) return tabsRef.current.find((tab) => tab.id === id)?.content || ''
     if (typeof editorApi.flushMarkdownSettled === 'function') {
@@ -649,6 +685,9 @@ export default function App() {
     requestPandocExport,
     exportExcalidraw: (format) => {
       if (activeIdRef.current) exportExcalidrawImage(activeIdRef.current, format)
+    },
+    exportDrawio: (format) => {
+      if (activeIdRef.current) exportDrawioImage(activeIdRef.current, format)
     },
     setSidebarOpen,
     initialFolderRoots: initialFolderRoots
@@ -1152,6 +1191,7 @@ export default function App() {
         onExportHtml={exportPathToHtml}
         onExportPandoc={exportPathWithPandoc}
         onExportExcalidraw={exportExcalidrawImage}
+        onExportDrawio={exportDrawioImage}
         onReorder={reorderTabs}
         onToggleSidebar={() => setSidebarOpen((v) => !v)}
         onToggleReadOnly={() => updateSettings({ mobileReadOnly: !settings.mobileReadOnly })}

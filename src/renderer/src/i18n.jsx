@@ -134,6 +134,7 @@ export const STRINGS = {
     'side.openFolder': 'Open Folder',
     'side.newFile': 'New file',
     'side.newWhiteboard': 'New Whiteboard',
+    'side.newDiagram': 'New Diagram',
     'side.newFolder': 'New folder',
     'side.collapseAll': 'Collapse all',
     'side.expandAll': 'Expand all',
@@ -216,6 +217,7 @@ export const STRINGS = {
     'error.exportHtmlUnavailable': 'Open a Markdown document first to export it as HTML.',
     'error.exportFailed': 'Export failed: ',
     'error.excalidrawExportUnavailable': 'Whiteboard canvas is not ready yet — please try again in a moment',
+    'error.drawioExportUnavailable': 'Diagram editor is not ready yet — please try again in a moment',
     'cmd.exportExcalidrawPng': 'Export as PNG…',
     'cmd.exportExcalidrawSvg': 'Export as SVG…',
     'html.title': 'Export HTML',
@@ -730,6 +732,14 @@ export const STRINGS = {
     'excalidraw.corruptNote': 'File is not a valid Excalidraw scene — showing a blank canvas',
     'excalidraw.mobilePlaceholder': 'Whiteboard editing is currently desktop-only',
 
+    // drawio diagrams
+    'drawio.corruptNote': 'File is not a valid drawio document — showing a blank canvas',
+    'drawio.mobilePlaceholder': 'Diagram editing is currently desktop-only',
+    'drawio.loadError': 'The drawio editor could not be loaded',
+    'drawio.retry': 'Retry',
+    'cmd.exportDrawioPng': 'Export Diagram as PNG',
+    'cmd.exportDrawioSvg': 'Export Diagram as SVG',
+
     // split view
     'split.toggle': 'Split editor',
     'split.close': 'Close split',
@@ -869,6 +879,7 @@ export const STRINGS = {
     'side.openFolder': '打开文件夹',
     'side.newFile': '新建文件',
     'side.newWhiteboard': '新建白板',
+    'side.newDiagram': '新建绘图',
     'side.newFolder': '新建文件夹',
     'side.collapseAll': '全部折叠',
     'side.expandAll': '全部展开',
@@ -947,6 +958,7 @@ export const STRINGS = {
     'error.exportHtmlUnavailable': '请先打开一个 Markdown 文档再导出 HTML。',
     'error.exportFailed': '导出失败：',
     'error.excalidrawExportUnavailable': '白板画布尚未就绪，请稍候重试',
+    'error.drawioExportUnavailable': '图表编辑器尚未就绪，请稍候重试',
     'cmd.exportExcalidrawPng': '导出为 PNG…',
     'cmd.exportExcalidrawSvg': '导出为 SVG…',
     'html.title': '导出 HTML',
@@ -1457,6 +1469,14 @@ export const STRINGS = {
     // excalidraw whiteboard
     'excalidraw.corruptNote': '文件内容不是有效的 Excalidraw 场景，已显示为空白画布',
     'excalidraw.mobilePlaceholder': '白板编辑目前仅桌面版支持',
+
+    // drawio 图表
+    'drawio.corruptNote': '文件内容不是有效的 drawio 文档，已显示为空白画布',
+    'drawio.mobilePlaceholder': '图表编辑目前仅桌面版支持',
+    'drawio.loadError': 'drawio 编辑器未能加载',
+    'drawio.retry': '重试',
+    'cmd.exportDrawioPng': '导出图表为 PNG',
+    'cmd.exportDrawioSvg': '导出图表为 SVG',
 
     'split.toggle': '分屏',
     'split.close': '关闭分屏',

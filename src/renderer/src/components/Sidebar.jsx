@@ -11,6 +11,7 @@ import {
 } from '../paths.js'
 import { copyToClipboard } from '../ui.js'
 import { EMPTY_EXCALIDRAW_SCENE } from '../lib/excalidraw-scene.js'
+import { EMPTY_DRAWIO_XML } from '../lib/drawio-file.js'
 import { useSidebarTree } from '../hooks/useSidebarTree.js'
 import SidebarContextMenu from './SidebarContextMenu.jsx'
 
@@ -97,6 +98,15 @@ export default function Sidebar({
     if (!childrenMap[dir]) loadDir(dir)
   }
 
+  // Start inline creation for a drawio diagram
+  const startNewDiagram = (dirNode) => {
+    const dir = dirNode ? dirNode.path : defaultRoot
+    if (!dir) return
+    setCreating({ dir, type: 'file', value: 'untitled.drawio', defaultExt: '.drawio' })
+    setExpanded((s) => new Set(s).add(dir))
+    if (!childrenMap[dir]) loadDir(dir)
+  }
+
   // Start inline creation for a folder
   const startNewFolder = (dirNode) => {
     const dir = dirNode ? dirNode.path : defaultRoot
@@ -130,7 +140,11 @@ export default function Sidebar({
         const path = join(dir, fileName)
         await window.api.createFile(
           path,
-          fileName.toLowerCase().endsWith('.excalidraw') ? EMPTY_EXCALIDRAW_SCENE : ''
+          fileName.toLowerCase().endsWith('.excalidraw')
+            ? EMPTY_EXCALIDRAW_SCENE
+            : fileName.toLowerCase().endsWith('.drawio')
+              ? EMPTY_DRAWIO_XML
+              : ''
         )
         await loadDir(dir)
         onOpenFile(path)
@@ -438,6 +452,11 @@ export default function Sidebar({
           {window.api?.capabilities?.excalidraw && (
             <button title={t('side.newWhiteboard')} onClick={() => startNewWhiteboard(null)}>
               <Icon name="whiteboard" size={15} />
+            </button>
+          )}
+          {window.api?.capabilities?.drawio && (
+            <button title={t('side.newDiagram')} onClick={() => startNewDiagram(null)}>
+              <Icon name="diagram" size={15} />
             </button>
           )}
           <button title={t('side.newFolder')} onClick={() => startNewFolder(null)}>

@@ -26,6 +26,8 @@ const COMMAND_PALETTE_ICONS = {
   'file.exportPdf': 'file',
   'file.exportExcalidrawPng': 'file',
   'file.exportExcalidrawSvg': 'file',
+  'file.exportDrawioPng': 'file',
+  'file.exportDrawioSvg': 'file',
   'file.exportHtml': 'globe',
   'file.exportPandocDocx': 'file',
   'file.exportPandocEpub': 'file',
@@ -111,6 +113,7 @@ export function createMenuHandlers({
   requestHtmlExport,
   requestPandocExport,
   exportExcalidraw,
+  exportDrawio,
 }) {
   const exportRendered = async (kind) => {
     const id = pickEditableId()
@@ -155,6 +158,8 @@ export function createMenuHandlers({
     exportPdf: () => exportRendered('pdf'),
     exportExcalidrawPng: () => exportExcalidraw?.('png'),
     exportExcalidrawSvg: () => exportExcalidraw?.('svg'),
+    exportDrawioPng: () => exportDrawio?.('png'),
+    exportDrawioSvg: () => exportDrawio?.('svg'),
     exportHtml: () => exportRendered('html'),
     exportPandocDocx: () => exportPandoc('docx'),
     exportPandocEpub: () => exportPandoc('epub'),

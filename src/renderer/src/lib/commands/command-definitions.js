@@ -154,6 +154,28 @@ export const COMMAND_DEFINITIONS = [
     palette: true
   },
   {
+    id: 'file.exportDrawioPng',
+    handler: 'exportDrawioPng',
+    titleKey: 'cmd.exportDrawioPng',
+    category: COMMAND_CATEGORIES.FILE,
+    context: COMMAND_CONTEXTS.DOCUMENT,
+    defaultKeybindings: [],
+    electronAccelerator: true,
+    capability: 'drawio',
+    palette: true
+  },
+  {
+    id: 'file.exportDrawioSvg',
+    handler: 'exportDrawioSvg',
+    titleKey: 'cmd.exportDrawioSvg',
+    category: COMMAND_CATEGORIES.FILE,
+    context: COMMAND_CONTEXTS.DOCUMENT,
+    defaultKeybindings: [],
+    electronAccelerator: true,
+    capability: 'drawio',
+    palette: true
+  },
+  {
     id: 'file.exportHtml',
     handler: 'exportHtml',
     titleKey: 'cmd.exportHtml',

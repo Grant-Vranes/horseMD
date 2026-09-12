@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Icon } from './icons.jsx'
 import { useI18n } from '../i18n.jsx'
-import { isMarkdownName, isExcalidrawName } from '../paths.js'
+import { isMarkdownName, isExcalidrawName, isDrawioName } from '../paths.js'
 import { copyToClipboard } from '../ui.js'
 import { labelWithShortcut } from '../lib/commands/shortcut-labels.js'
 import ExportContextSubmenu from './ExportContextSubmenu.jsx'
@@ -24,6 +24,7 @@ export default function Tabs({
   onExportHtml,
   onExportPandoc,
   onExportExcalidraw,
+  onExportDrawio,
   onReorder,
   effectiveKeybindings
 }) {
@@ -218,6 +219,16 @@ export default function Tabs({
                       </button>
                       <button className="tab-menu-item" onClick={run(() => onExportExcalidraw?.(tab.id, 'svg'))}>
                         {t('cmd.exportExcalidrawSvg')}
+                      </button>
+                    </>
+                  )}
+                  {isDrawioName(tab.title) && window.api.capabilities?.drawio && (
+                    <>
+                      <button className="tab-menu-item" onClick={run(() => onExportDrawio?.(tab.id, 'png'))}>
+                        {t('cmd.exportDrawioPng')}
+                      </button>
+                      <button className="tab-menu-item" onClick={run(() => onExportDrawio?.(tab.id, 'svg'))}>
+                        {t('cmd.exportDrawioSvg')}
                       </button>
                     </>
                   )}

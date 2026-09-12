@@ -30,6 +30,7 @@ export default function Topbar({
   onExportHtml,
   onExportPandoc,
   onExportExcalidraw,
+  onExportDrawio,
   onReorder,
   onToggleSidebar,
   onToggleReadOnly,
@@ -65,6 +66,7 @@ export default function Topbar({
         onExportHtml={onExportHtml}
         onExportPandoc={onExportPandoc}
         onExportExcalidraw={onExportExcalidraw}
+        onExportDrawio={onExportDrawio}
         onReorder={onReorder}
         effectiveKeybindings={effectiveKeybindings}
       />
