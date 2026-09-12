@@ -18,13 +18,16 @@
 
 - drawio 无官方 npm React 组件；官方嵌入方式是 iframe + JSON postMessage 协议
   （`?embed=1&proto=json`）。
-- `configure` 消息支持 `autosave: 1`（`diagramly/EditorUi.js` configure 处理器）。
-  启用后 drawio 在编辑变化后按 `autosaveDelay`（默认 2000ms）主动向宿主发
+- `configure` 无需单独发送；在 `load` 消息上直接携带 `autosave: 1`
+  （`diagramly/EditorUi.js` 的 `action == 'load'` 分支）。启用后 drawio 在编辑
+  变化后按 `autosaveDelay`（默认约 1500–2000ms）主动向宿主发
   `{event: 'save', xml}`，**编辑器不退出**——正好映射 HorseMD 的
   "用户编辑 → 脏标记 → 保存管线"。
 - 不设 `saveAndExit=1` 时，Ctrl+S 与 Save 按钮均为普通 save 消息，不退出；
   Exit 按钮可用 `noExitBtn=1` 隐藏。
-- `export` 消息协议（`embedExportProtocol`）可回传 PNG/SVG data URL。
+- drawio embed 消息为扁平 JSON：宿主→iframe 用 `{action: 'load', xml,
+  autosave: 1}` / `{action: 'export', format}`；iframe→宿主用
+  `{event: 'init'}` / `{event: 'save', xml}` / `{event: 'export', format, data}`。
 - `.drawio` 文件是 XML：`<mxfile>` 含多个 `<diagram>`（多页），可能
   deflate+base64 压缩或未压缩。XML 原样进出，由 drawio 自身管理，宿主不解析语义。
 
@@ -41,7 +44,8 @@
 - renderer 通过 IPC `window.api.drawio.getEditorUrl()` 获取 iframe 地址：
   `drawio-local://index.html?embed=1&proto=json&configure=1&autosave=1&ui=min&noExitBtn=1&spin=1&lang=<zh|en>`
   （lang 跟随应用 i18n 语言）。
-- 预期安装包增加约 15–25MB。
+- 预期 `resources/drawio/` 原始体积约 54MB（官方 draw.war 解包后），安装包
+  经压缩后增量更小；`resources/drawio/` 不入库，由获取脚本按 pin 版本下载。
 
 ### 2. 组件与数据流（复刻 Excalidraw 模式）
 
