@@ -140,6 +140,17 @@ export default function App() {
   // User preferences (page width, image-host command). Persisted separately from
   // the session; see settings.js.
   const [settings, setSettings] = useState(loadSettings)
+  // Live mirror of the attachment-folder preference for save-time hooks that
+  // must not re-create their callbacks on every settings change (writeTab's
+  // inlineForSave call and useAttachments read this at call time).
+  const imageInsertOptionsRef = useRef({
+    mode: settings.imageInsertMode,
+    customPath: settings.imageInsertCustomPath
+  })
+  imageInsertOptionsRef.current = {
+    mode: settings.imageInsertMode,
+    customPath: settings.imageInsertCustomPath
+  }
   // Settings tabs are intentionally transient, but the user's current place in
   // the settings workspace should survive switching to a document and back.
   // This is UI-only state, so it must not be written into preferences/session.
@@ -690,7 +701,8 @@ export default function App() {
       if (activeIdRef.current) exportDrawioImage(activeIdRef.current, format)
     },
     setSidebarOpen,
-    initialFolderRoots: initialFolderRoots
+    initialFolderRoots: initialFolderRoots,
+    getImageInsertOptions: () => imageInsertOptionsRef.current
   })
 
   const syncWorkspaces = useSyncWorkspaces({ folderRoots, addFolder })
@@ -970,7 +982,8 @@ export default function App() {
     commitLive,
     commitAllLive,
     editorApis,
-    tRef
+    tRef,
+    getImageInsertOptions: () => imageInsertOptionsRef.current
   })
 
   // Review actions (CriticMarkup) on the active/focused tab. pickEditableId is
@@ -1293,6 +1306,8 @@ export default function App() {
             mountedIds={mountedIds}
             activeTab={activeTab}
             imageUploadCommand={settings.imageUploadCommand}
+            imageInsertMode={settings.imageInsertMode}
+            imageInsertCustomPath={settings.imageInsertCustomPath}
             spellcheck={settings.spellcheck}
             inlineMathDeleteMode={settings.inlineMathDeleteMode}
             selectionToolbar={settings.selectionToolbar}

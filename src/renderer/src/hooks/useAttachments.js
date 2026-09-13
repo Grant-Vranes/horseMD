@@ -20,7 +20,8 @@ export function useAttachments({
   commitLive,
   commitAllLive,
   editorApis,
-  tRef
+  tRef,
+  getImageInsertOptions
 }) {
   const replaceTabContent = useCallback((id, content) => {
     tabsRef.current = tabsRef.current.map((tab) =>
@@ -80,9 +81,11 @@ export function useAttachments({
     fireToast(tRef.current('attach.picking'), { duration: 1200 })
     const picked = await window.api.openAttachments()
     if (!picked?.length) return
+    // Attachments land in the same folder as pasted images (设置 → 附件文件夹).
+    const insertOpts = getImageInsertOptions?.() || {}
     const links = []
     for (const path of picked) {
-      const result = await window.api.saveAttachment(tab.path, path)
+      const result = await window.api.saveAttachment(tab.path, path, insertOpts.mode, insertOpts.customPath)
       if (!result?.ok) {
         fireToast(tRef.current('attach.failed', { msg: result?.error || baseName(path) }), { sticky: true })
         return
@@ -92,7 +95,7 @@ export function useAttachments({
     if (!links.length) return
     insertMarkdownIntoTab(id, links.join('\n'))
     fireToast(tRef.current('attach.inserted', { n: links.length }), { duration: 1500 })
-  }, [commitAllLive, insertMarkdownIntoTab, pickEditableId, tabsRef, tRef])
+  }, [commitAllLive, insertMarkdownIntoTab, pickEditableId, tabsRef, tRef, getImageInsertOptions])
 
   return { attachFiles, insertMarkdownIntoTab }
 }

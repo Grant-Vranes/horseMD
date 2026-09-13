@@ -13,10 +13,18 @@ const fileToDataUrl = (file) =>
 // Turn a pasted / dropped / picked image file into a *persistable* src so it
 // never dies on reload:
 //   1. image-host command configured -> upload, use returned URL
-//   2. saved document -> write into ./assets and use a relative path
+//   2. saved document -> write into the configured attachment folder and use
+//      a relative path (设置 → 附件文件夹：./、./assets、./<name>.assets 或自定义)
 //   3. unsaved doc with desktop paste folder -> temporary file:// URL
 //   4. mobile / any failure -> inline base64 data: URL
-export function createImagePersister({ docPath, getUploadCommand, getT, notify }) {
+export function createImagePersister({
+  docPath,
+  getUploadCommand,
+  getInsertMode,
+  getCustomPath,
+  getT,
+  notify
+}) {
   return async function persistImage(file, fromClipboard = false) {
     // Clipboard screenshots default to collision-prone names (image.png,
     // QQ_*.png). Stamp a Typora-style timestamp so they never overwrite a
@@ -50,17 +58,24 @@ export function createImagePersister({ docPath, getUploadCommand, getT, notify }
       // Upload failed — fall through to local persistence so it isn't lost.
     }
     if (window.api.saveImage && docPath) {
-      // Saved doc -> write straight into ./assets, use a relative path.
+      // Saved doc -> write into the attachment folder chosen in settings,
+      // use a relative (or custom-path) Markdown link.
       try {
         const buf = await file.arrayBuffer()
-        const res = await window.api.saveImage(docPath, name, new Uint8Array(buf))
+        const res = await window.api.saveImage(
+          docPath,
+          name,
+          new Uint8Array(buf),
+          getInsertMode?.(),
+          getCustomPath?.()
+        )
         if (res?.ok && res.path) return res.path
       } catch {
         /* fall through */
       }
     } else if (window.api.savePaste) {
       // Unsaved doc -> park in the global paste folder and use a file:// path,
-      // relocated into ./assets on first save.
+      // relocated into the configured attachment folder on first save.
       try {
         const buf = await file.arrayBuffer()
         const res = await window.api.savePaste(name, new Uint8Array(buf))

@@ -1,6 +1,6 @@
 {
   "name": "horse",
-  "version": "0.13.213",
+  "version": "0.13.214",
   "description": "HorseMD Markdown Editor",
   "author": "mini_md",
   "license": "MIT",
@@ -176,7 +176,8 @@
     "test:s3-electron-sync": "node scripts/test-s3-electron-sync.mjs",
     "test:watchers": "node scripts/test-main-watchers.mjs",
     "test:criticmarkup": "node scripts/test-strike-guard.mjs && node scripts/test-substitution-headless.mjs",
-    "test:core": "npm run test:security && npm run test:pdf-export && npm run test:document-export && npm run test:ai-core && npm run test:editor-registry && npm run test:filesystem && npm run test:watchers && npm run test:source-map && npm run test:review && npm run test:criticmarkup && npm run test:editor-input && npm run test:ui-layout",
+    "test:core": "npm run test:security && npm run test:pdf-export && npm run test:document-export && npm run test:ai-core && npm run test:editor-registry && npm run test:filesystem && npm run test:watchers && npm run test:source-map && npm run test:review && npm run test:criticmarkup && npm run test:editor-input && npm run test:ui-layout && npm run test:attachment-folder",
+    "test:attachment-folder": "node --test scripts/test-attachment-folder.mjs",
     "cap:sync": "npm run build:mobile && cap sync",
     "cap:ios": "npm run build:mobile && cap sync ios && cap open ios",
     "cap:android": "npm run build:mobile && cap sync android && cap open android",

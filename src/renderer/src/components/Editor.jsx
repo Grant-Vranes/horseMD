@@ -139,6 +139,8 @@ export default function Editor({
   initialContent,
   docPath,
   imageUploadCommand,
+  imageInsertMode,
+  imageInsertCustomPath,
   spellcheck,
   inlineMathDeleteMode,
   selectionToolbar,
@@ -159,6 +161,12 @@ export default function Editor({
   // onUpload callback is registered once at create but always uses the latest).
   const uploadCmdRef = useRef(imageUploadCommand)
   uploadCmdRef.current = imageUploadCommand
+  // Live mirror of the attachment-folder preference (设置 → 附件文件夹), read at
+  // paste/drop time so changing the setting affects the next image immediately.
+  const insertModeRef = useRef(imageInsertMode)
+  insertModeRef.current = imageInsertMode
+  const insertCustomPathRef = useRef(imageInsertCustomPath)
+  insertCustomPathRef.current = imageInsertCustomPath
   // Live mirror of the spell-check pref: applied to view.dom on mount (below) and
   // re-applied by the effect when the pref changes.
   const spellcheckRef = useRef(spellcheck)
@@ -295,6 +303,8 @@ export default function Editor({
     const persistImage = createImagePersister({
       docPath,
       getUploadCommand: () => uploadCmdRef.current,
+      getInsertMode: () => insertModeRef.current,
+      getCustomPath: () => insertCustomPathRef.current,
       getT: (key) => tRef.current(key),
       notify: fireToast
     })

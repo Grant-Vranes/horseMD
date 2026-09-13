@@ -93,21 +93,23 @@ const api = {
   uploadImage: (command, name, bytes) =>
     ipcRenderer.invoke('image:upload', command, name, bytes),
 
-  // save a pasted/dropped image into the document's assets/ folder (no image
-  // host); returns { ok, path } with a relative path to insert into Markdown.
-  saveImage: (docPath, name, bytes) =>
-    ipcRenderer.invoke('image:save', docPath, name, bytes),
+  // save a pasted/dropped image next to the document (no image host); the
+  // target folder follows the attachment-folder setting (mode + customPath);
+  // returns { ok, path } with a relative path to insert into Markdown.
+  saveImage: (docPath, name, bytes, mode, customPath) =>
+    ipcRenderer.invoke('image:save', docPath, name, bytes, mode, customPath),
   // save an image pasted into an UNSAVED doc to the global paste folder; returns
   // { ok, url } (a file:// URL) so it shows as a real path, not a base64 blob.
   savePaste: (name, bytes) => ipcRenderer.invoke('image:savePaste', name, bytes),
-  // at save time, move base64 / paste-folder images into the doc's assets/ and
-  // rewrite the Markdown to relative paths; returns { content, changed }.
-  inlineForSave: (content, targetPath) =>
-    ipcRenderer.invoke('image:inlineForSave', content, targetPath),
-  // copy arbitrary files into the document's assets/ folder and return a
+  // at save time, move base64 / paste-folder images into the configured
+  // attachment folder and rewrite the Markdown to relative paths; returns
+  // { content, changed }.
+  inlineForSave: (content, targetPath, mode, customPath) =>
+    ipcRenderer.invoke('image:inlineForSave', content, targetPath, mode, customPath),
+  // copy arbitrary files into the configured attachment folder and return a
   // relative Markdown link target.
-  saveAttachment: (docPath, sourcePath) =>
-    ipcRenderer.invoke('attachment:save', docPath, sourcePath),
+  saveAttachment: (docPath, sourcePath, mode, customPath) =>
+    ipcRenderer.invoke('attachment:save', docPath, sourcePath, mode, customPath),
 
   // custom themes (user CSS files in userData/themes)
   themesList: () => ipcRenderer.invoke('themes:list'),

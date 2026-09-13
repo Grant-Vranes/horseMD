@@ -150,6 +150,12 @@ export const DEFAULT_SETTINGS = {
   // the image file path is appended as an argument and the command prints the
   // resulting URL to stdout.
   imageUploadCommand: '',
+  // Attachment folder for locally-copied images/attachments (设置 → 附件文件夹).
+  // Only used when no image-host command is configured. 'current' = next to
+  // the doc (./), 'assets' = ./assets (legacy default), 'docname' =
+  // ./<filename>.assets (Typora-style), 'custom' = imageInsertCustomPath.
+  imageInsertMode: 'assets',
+  imageInsertCustomPath: '',
   // English spell-check (red wavy underline) in the rich editor. Default OFF
   // (cleaner for Chinese-first writing). Editor.jsx applies it as the `spellcheck`
   // attribute on the Crepe `.ProseMirror` contenteditable; other surfaces (the
@@ -243,6 +249,11 @@ export function loadSettings() {
       ),
       imageUploadCommand:
         typeof raw.imageUploadCommand === 'string' ? raw.imageUploadCommand : '',
+      imageInsertMode: ['current', 'assets', 'docname', 'custom'].includes(raw.imageInsertMode)
+        ? raw.imageInsertMode
+        : 'assets',
+      imageInsertCustomPath:
+        typeof raw.imageInsertCustomPath === 'string' ? raw.imageInsertCustomPath : '',
       spellcheck: raw.spellcheck === true,
       inlineMathDeleteMode: raw.inlineMathDeleteMode === 'fast' ? 'fast' : 'protect',
       selectionToolbar: raw.selectionToolbar !== false,

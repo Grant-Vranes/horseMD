@@ -54,7 +54,8 @@ export function useFileOps({
   requestHtmlExport,
   requestPandocExport,
   setSidebarOpen,
-  initialFolderRoots
+  initialFolderRoots,
+  getImageInsertOptions
 }) {
   const workspace = useWorkspace({ initialFolderRoots, setSidebarOpen })
   const { bumpRefresh } = workspace
@@ -355,10 +356,17 @@ export function useFileOps({
   const writeTab = useCallback(async (tab, targetPath) => {
     try {
       // Move pasted images (base64 blobs / global paste-folder files) into the
-      // doc's ./assets and rewrite links to relative paths, so the saved file is
-      // clean and portable (Typora-style). No-op when there are none / on mobile.
+      // configured attachment folder (设置 → 附件文件夹) and rewrite links to
+      // relative paths, so the saved file is clean and portable (Typora-style).
+      // No-op when there are none / on mobile.
+      const insertOpts = getImageInsertOptions?.() || {}
       const { content: written, changed } = window.api.inlineForSave
-        ? await window.api.inlineForSave(tab.content, targetPath)
+        ? await window.api.inlineForSave(
+            tab.content,
+            targetPath,
+            insertOpts.mode,
+            insertOpts.customPath
+          )
         : { content: tab.content, changed: false }
       const { mtimeMs } = await window.api.writeFile(targetPath, written)
       setTabs((prev) =>
@@ -400,7 +408,7 @@ export function useFileOps({
       // Never fail silently — surface the real error so saving is debuggable.
       fireToast(tRef.current('save.failed', { msg: e?.message || String(e) }), { sticky: true })
     }
-  }, [isMobile, setTabs, bumpRefresh, tRef])
+  }, [isMobile, setTabs, bumpRefresh, tRef, getImageInsertOptions])
 
   const saveTab = useCallback(
     async (id, forceDialog = false) => {

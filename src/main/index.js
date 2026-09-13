@@ -6,6 +6,7 @@ import { existsSync, statSync, realpathSync, constants as fsConstants } from 'no
 import { exec } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { canGrantLocalFonts, createLocalFontGrant, getAllowedExternalUrl } from './security.js'
+import { resolveAttachmentTarget } from './attachment-folder.js'
 import { registerDocumentIpc } from './documents.js'
 import { registerFileSystemIpc } from './filesystem.js'
 import { registerSyncWorkspaceIpc } from './sync-workspaces.js'
@@ -717,13 +718,15 @@ const uniqueAssetFile = (dir, name) => {
   return file
 }
 
-ipcMain.handle('attachment:save', async (_e, docPath, sourcePath) => {
+ipcMain.handle('attachment:save', async (_e, docPath, sourcePath, mode, customPath) => {
   try {
     if (!docPath) return { ok: false, error: 'Save the document before attaching files.' }
     if (!sourcePath) return { ok: false, error: 'No attachment selected.' }
     const st = await fs.stat(sourcePath)
     if (!st.isFile()) return { ok: false, error: 'Only files can be attached.' }
-    const assetsDir = join(dirname(docPath), 'assets')
+    // Honor the attachment-folder setting (设置 → 附件文件夹) instead of a
+    // hardcoded ./assets: same resolver as images so both land together.
+    const { dir: assetsDir, prefix } = resolveAttachmentTarget(docPath, mode, customPath)
     await fs.mkdir(assetsDir, { recursive: true })
 
     const sourceReal = realpathSync(sourcePath)
@@ -734,11 +737,11 @@ ipcMain.handle('attachment:save', async (_e, docPath, sourcePath) => {
       /* just created; resolve() fallback below is enough */
     }
     const inAssets = sourceReal.startsWith(resolve(assetsReal) + sep)
-    if (inAssets) return { ok: true, path: 'assets/' + basename(sourcePath), name: basename(sourcePath) }
+    if (inAssets) return { ok: true, path: prefix + basename(sourcePath), name: basename(sourcePath) }
 
     const file = uniqueAssetFile(assetsDir, basename(sourcePath))
     await fs.copyFile(sourcePath, file, fsConstants.COPYFILE_EXCL)
-    return { ok: true, path: 'assets/' + basename(file), name: basename(sourcePath) }
+    return { ok: true, path: prefix + basename(file), name: basename(sourcePath) }
   } catch (e) {
     return { ok: false, error: e?.message || String(e) }
   }
@@ -749,19 +752,20 @@ ipcMain.handle('attachment:save', async (_e, docPath, sourcePath) => {
 // the doc's first save they're moved into its ./assets (see image:inlineForSave).
 const pasteImagesDir = () => join(app.getPath('userData'), 'paste-images')
 
-// Save a pasted/dropped image next to the document, in an `assets/` subfolder,
-// and return the relative path to insert into the Markdown (Typora-style). This
-// is the no-image-host path for a SAVED doc; without it, pasted images become
-// in-memory blob: URLs that vanish on reload.
-ipcMain.handle('image:save', async (_e, docPath, name, bytes) => {
+// Save a pasted/dropped image next to the document and return the relative
+// path to insert into the Markdown (Typora-style). The target folder follows
+// the attachment-folder setting (./, ./assets, ./<name>.assets, or custom);
+// this is the no-image-host path for a SAVED doc; without it, pasted images
+// become in-memory blob: URLs that vanish on reload.
+ipcMain.handle('image:save', async (_e, docPath, name, bytes, mode, customPath) => {
   try {
     if (!docPath) return { ok: false, error: 'No document path.' }
-    const dir = join(dirname(docPath), 'assets')
+    const { dir, prefix } = resolveAttachmentTarget(docPath, mode, customPath)
     await fs.mkdir(dir, { recursive: true })
     const file = uniqueImageFile(dir, name)
     await fs.writeFile(file, Buffer.from(bytes))
     // POSIX-relative link so it round-trips in Markdown on every OS.
-    return { ok: true, path: 'assets/' + basename(file) }
+    return { ok: true, path: prefix + basename(file) }
   } catch (e) {
     return { ok: false, error: e?.message || String(e) }
   }
@@ -784,14 +788,15 @@ ipcMain.handle('image:savePaste', async (_e, name, bytes) => {
 
 // At save time, rewrite a doc's Markdown so no image link is a giant base64 blob
 // or an absolute paste-folder path: base64 data URLs and file:// links in the
-// global paste folder are written/moved into the doc's ./assets and rewritten to
-// short relative paths (the Typora end-state). Other links are left untouched.
-ipcMain.handle('image:inlineForSave', async (_e, content, targetPath) => {
+// global paste folder are written/moved into the attachment folder configured by
+// the attachment-folder setting and rewritten to short relative paths (the
+// Typora end-state). Other links are left untouched.
+ipcMain.handle('image:inlineForSave', async (_e, content, targetPath, mode, customPath) => {
   try {
     if (!content || !targetPath) return { content, changed: false }
     const matches = [...content.matchAll(/(!\[[^\]]*\]\()([^)\s]+)(\))/g)]
     if (!matches.length) return { content, changed: false }
-    const assetsDir = join(dirname(targetPath), 'assets')
+    const { dir: assetsDir, prefix } = resolveAttachmentTarget(targetPath, mode, customPath)
     // Real path so the startsWith test below survives symlinks (e.g. macOS
     // /tmp → /private/tmp), since the link's path and userData may differ.
     let pdir = pasteImagesDir()
@@ -822,7 +827,7 @@ ipcMain.handle('image:inlineForSave', async (_e, content, targetPath) => {
           const ext = dataM[1].toLowerCase() === 'jpeg' ? 'jpg' : dataM[1].toLowerCase().replace(/[^a-z0-9]/g, '') || 'png'
           const file = uniqueImageFile(assetsDir, `image.${ext}`)
           await fs.writeFile(file, Buffer.from(dataM[2], 'base64'))
-          replacement = pre + 'assets/' + basename(file) + ')'
+          replacement = pre + prefix + basename(file) + ')'
           changed = true
         } else if (/^file:\/\//i.test(url)) {
           const fsPath = fileURLToPath(url)
@@ -837,7 +842,7 @@ ipcMain.handle('image:inlineForSave', async (_e, content, targetPath) => {
             const file = uniqueImageFile(assetsDir, basename(fsPath))
             await fs.copyFile(fsPath, file)
             fs.rm(fsPath, { force: true }).catch(() => {})
-            replacement = pre + 'assets/' + basename(file) + ')'
+            replacement = pre + prefix + basename(file) + ')'
             changed = true
           }
         }

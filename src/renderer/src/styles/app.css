@@ -4713,6 +4713,37 @@ body.hm-full-width .source-editor {
 .settings-update-status {
   margin-top: 2px;
 }
+/* Attachment folder — vertical radio choice (设置 → 附件文件夹). */
+.settings-radio-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 4px 0 8px;
+}
+.settings-radio-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 10px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s var(--ease-out);
+}
+.settings-radio-item:hover {
+  background: var(--accent-soft);
+}
+.settings-radio-item input[type='radio'] {
+  accent-color: var(--accent);
+  margin: 0;
+  flex: 0 0 auto;
+}
+.settings-block-hint {
+  margin-top: 6px;
+  font-size: 12px;
+  opacity: 0.75;
+}
 /* Language — segmented choice. */
 .settings-langs {
   display: flex;

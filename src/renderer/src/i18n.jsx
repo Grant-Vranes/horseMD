@@ -652,6 +652,17 @@ export const STRINGS = {
     'imghost.uploading': 'Uploading image…',
     'imghost.uploaded': 'Image uploaded',
     'imghost.failed': 'Image upload failed — kept a local copy',
+    'settings.attachmentFolder': 'Attachment folder',
+    'settings.attachmentFolderDesc':
+      'Where images and attachments are stored locally when no image-host command is configured (Typora-style).',
+    'settings.insertImage': 'When inserting images',
+    'settings.imageInsert.current': 'Copy to the document folder (./)',
+    'settings.imageInsert.assets': 'Copy to the ./assets folder',
+    'settings.imageInsert.docname': 'Copy to the ./${filename}.assets folder',
+    'settings.imageInsert.custom': 'Copy to a custom path',
+    'settings.imageInsertCustomPlaceholder': 'e.g. ./imgs or D:\\Images\\${filename}',
+    'settings.imageInsertCustomHint':
+      'Relative paths resolve against the document folder; ${filename} expands to the file name.',
 
     // mermaid live preview
     'mermaid.rendering': 'Rendering diagram…',
@@ -1395,6 +1406,15 @@ export const STRINGS = {
     'imghost.uploading': '正在上传图片…',
     'imghost.uploaded': '图片已上传',
     'imghost.failed': '图片上传失败 —— 已保留本地副本',
+    'settings.attachmentFolder': '附件文件夹',
+    'settings.attachmentFolderDesc': '未配置图床命令时，粘贴/拖入的图片和附件文件的本地存放位置（类似 Typora）。',
+    'settings.insertImage': '插入图片时',
+    'settings.imageInsert.current': '复制图片到当前文件夹（./）',
+    'settings.imageInsert.assets': '复制图片到 ./assets 文件夹',
+    'settings.imageInsert.docname': '复制图片到 ./${filename}.assets 文件夹',
+    'settings.imageInsert.custom': '复制到指定路径',
+    'settings.imageInsertCustomPlaceholder': '例如 ./imgs 或 D:\\Images\\${filename}',
+    'settings.imageInsertCustomHint': '相对路径基于文档所在目录解析；${filename} 会替换为当前文件名。',
 
     // mermaid 实时预览
     'mermaid.rendering': '正在渲染图表…',

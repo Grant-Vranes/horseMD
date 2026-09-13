@@ -51,6 +51,8 @@ export default function EditorArea({
   mountedIds,
   activeTab,
   imageUploadCommand,
+  imageInsertMode,
+  imageInsertCustomPath,
   spellcheck,
   inlineMathDeleteMode,
   selectionToolbar,
@@ -364,6 +366,8 @@ export default function EditorArea({
                 initialContent={tab.content}
                 docPath={tab.path}
                 imageUploadCommand={imageUploadCommand}
+                imageInsertMode={imageInsertMode}
+                imageInsertCustomPath={imageInsertCustomPath}
                 spellcheck={spellcheck}
                 inlineMathDeleteMode={inlineMathDeleteMode}
                 selectionToolbar={selectionToolbar}
