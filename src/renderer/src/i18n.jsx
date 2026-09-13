@@ -173,6 +173,8 @@ export const STRINGS = {
     'err.invalidName': 'That name can’t be used: ',
     'err.nameExists': 'A file or folder with that name already exists in this folder — please use a different name.',
     'side.emptyFolder': 'Empty — no Markdown files',
+    'side.trashDrop': 'Move to Trash',
+    'side.trashDone': '“{name}” moved to Trash',
     'edit.confirm': 'Confirm (Enter)',
     'edit.cancel': 'Cancel (Esc)',
 
@@ -918,6 +920,8 @@ export const STRINGS = {
     'err.invalidName': '这个名称不可用：',
     'err.nameExists': '该文件夹下已有同名文件，请换个名字。',
     'side.emptyFolder': '空文件夹 — 没有 Markdown 文件',
+    'side.trashDrop': '移到废纸篓',
+    'side.trashDone': '已将“{name}”移到废纸篓',
     'edit.confirm': '确认（回车）',
     'edit.cancel': '取消（Esc）',
 

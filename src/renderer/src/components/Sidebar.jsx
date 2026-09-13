@@ -9,7 +9,7 @@ import {
   isExistsError,
   normalizePathKey
 } from '../paths.js'
-import { copyToClipboard } from '../ui.js'
+import { copyToClipboard, fireToast } from '../ui.js'
 import { EMPTY_EXCALIDRAW_SCENE } from '../lib/excalidraw-scene.js'
 import { EMPTY_DRAWIO_XML } from '../lib/drawio-file.js'
 import { useSidebarTree } from '../hooks/useSidebarTree.js'
@@ -43,6 +43,15 @@ export default function Sidebar({
   // drop target (for highlighting).
   const dragPathRef = useRef(null)
   const [dragOver, setDragOver] = useState(null)
+  // While an internal sidebar drag is in flight, show the drop-to-trash zone.
+  const [dragActive, setDragActive] = useState(false)
+  const TRASH_DROP = '__trash__'
+  // Node being dragged (for the trash ghost's icon/label) and its frozen
+  // on-screen rect while the destruction animation plays.
+  const dragNodeRef = useRef(null)
+  const [trashGhost, setTrashGhost] = useState(null)
+  const [trashConsumed, setTrashConsumed] = useState(false)
+  const trashTimersRef = useRef([])
   const { childrenMap, expanded, setExpanded, loadDir, toggle, activeRowRef } =
     useSidebarTree({ folderRoots, activePath, refreshNonce })
   const folderRootsKey = folderRoots.join('\n')
@@ -172,6 +181,59 @@ export default function Sidebar({
     } catch (e) {
       window.alert((t('err.delete') || 'Could not delete: ') + e.message)
     }
+  }
+
+  // Drag-and-drop trash: no confirm — the gesture is deliberate and shell
+  // trash is recoverable, unlike an immediate delete.
+  const moveToTrash = async (node) => {
+    if (!node?.path || isRootPath(node.path)) return
+    try {
+      await window.api.deleteItem(node.path)
+    } catch (e) {
+      window.alert((t('err.delete') || 'Could not delete: ') + e.message)
+      return false
+    }
+    fireToast(t('side.trashDone', { name: node.name }))
+    return true
+  }
+
+  // Drop on the trash zone: freeze the dragged row in place as a ghost, delete
+  // the item, and let the ghost play the full destruction animation. The tree
+  // refresh (ours or the watcher's) may remove the real row at any moment, so
+  // the ghost — not the live row — owns the visible effect.
+  const trashDrop = async () => {
+    const node = dragNodeRef.current
+    const src = dragPathRef.current
+    dragPathRef.current = null
+    dragNodeRef.current = null
+    setDragOver(null)
+    setDragActive(false)
+    if (!node?.path || !src || isRootPath(src)) return
+    const rowEl = document.querySelector(`.tree-row[data-path="${CSS.escape(src)}"]`)
+    if (rowEl) {
+      const r = rowEl.getBoundingClientRect()
+      setTrashGhost({
+        name: node.name,
+        isDir: node.type === 'dir',
+        left: r.left,
+        top: r.top,
+        width: r.width,
+        height: r.height,
+        pad: getComputedStyle(rowEl).paddingLeft
+      })
+    }
+    setTrashConsumed(true)
+    const ok = await moveToTrash(node)
+    trashTimersRef.current.forEach(clearTimeout)
+    trashTimersRef.current = [
+      setTimeout(() => {
+        setTrashGhost(null)
+        setTrashConsumed(false)
+        // The watcher usually refreshes first; this is the fallback so the row
+        // never lingers if watcher events are slow or disabled.
+        if (ok) refreshParentOf(src)
+      }, 500)
+    ]
   }
 
   const doDuplicate = async (node) => {
@@ -357,6 +419,7 @@ export default function Sidebar({
       <div key={node.path}>
         <div
           ref={isActive ? activeRowRef : undefined}
+          data-path={node.path}
           className={`tree-row${isActive ? ' active' : ''}${isDropTarget ? ' drag-over' : ''}`}
           style={{ paddingLeft: 8 + depth * 14 }}
           draggable={!renaming && !isRoot}
@@ -366,12 +429,16 @@ export default function Sidebar({
               return
             }
             dragPathRef.current = node.path
+            dragNodeRef.current = node
+            setDragActive(true)
             e.dataTransfer.effectAllowed = 'move'
             e.dataTransfer.setData('text/plain', node.path)
           }}
           onDragEnd={() => {
             dragPathRef.current = null
+            dragNodeRef.current = null
             setDragOver(null)
+            setDragActive(false)
           }}
           {...(isDir ? dropProps(node.path) : {})}
           onClick={() => (isDir ? toggle(node) : onOpenFile(node.path))}
@@ -497,6 +564,49 @@ export default function Sidebar({
           )
         )}
       </div>
+
+      {/* Drop-to-trash zone: floats over the bottom of the tree only while an
+          internal drag is in flight, so normal browsing never sees it and its
+          appearance causes no layout shift mid-drag. */}
+      {(dragActive || trashConsumed) && (
+        <div
+          className={`sidebar-trash${dragOver === TRASH_DROP ? ' drag-over' : ''}${trashConsumed ? ' consumed' : ''}`}
+          onDragOver={(e) => {
+            if (!dragPathRef.current) return
+            e.preventDefault()
+            e.dataTransfer.dropEffect = 'move'
+            if (dragOver !== TRASH_DROP) setDragOver(TRASH_DROP)
+          }}
+          onDragLeave={() => setDragOver((d) => (d === TRASH_DROP ? null : d))}
+          onDrop={(e) => {
+            e.preventDefault()
+            trashDrop()
+          }}
+        >
+          <Icon name="trash" size={15} />
+          <span>{t('side.trashDrop')}</span>
+        </div>
+      )}
+
+      {/* Frozen ghost of the row dropped on the trash zone; plays the
+          destruction animation in the row's original position. */}
+      {trashGhost && (
+        <div
+          className="tree-row trash-ghost"
+          style={{
+            position: 'fixed',
+            left: trashGhost.left,
+            top: trashGhost.top,
+            width: trashGhost.width,
+            height: trashGhost.height,
+            paddingLeft: trashGhost.pad
+          }}
+        >
+          <span className="tree-chevron" />
+          <Icon name={trashGhost.isDir ? 'folder' : 'file'} size={15} className="tree-icon" />
+          <span className="tree-label">{trashGhost.name}</span>
+        </div>
+      )}
 
       <SidebarContextMenu
         menu={menu}

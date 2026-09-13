@@ -1698,6 +1698,7 @@ body.resizing-pane .pane-left-resizer::before {
   display: flex;
   flex-direction: column;
   height: 100%;
+  position: relative;
 }
 .sidebar-head {
   display: flex;
@@ -1758,6 +1759,72 @@ body.resizing-pane .pane-left-resizer::before {
   height: 15px;
   margin: 0 2px;
   background: var(--border-soft);
+}
+
+/* Drop-to-trash zone: floats over the bottom of the sidebar while a sidebar
+   item is being dragged; highlighted when the drag hovers it. */
+.sidebar-trash {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  border: 1.5px dashed var(--border);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(6px);
+  color: var(--muted);
+  font-size: 13px;
+  pointer-events: auto;
+  animation: sidebar-trash-in 0.15s var(--ease-out);
+}
+@keyframes sidebar-trash-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.sidebar-trash.drag-over {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  border-style: solid;
+}
+/* Drop accepted: the zone swallows the item (pulse + fade out). */
+.sidebar-trash.consumed {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  border-style: solid;
+  animation: sidebar-trash-consumed 0.5s var(--ease-out) forwards;
+}
+@keyframes sidebar-trash-consumed {
+  0% { transform: scale(1); opacity: 1; }
+  35% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(0.96); opacity: 0; }
+}
+
+/* Frozen copy of the row that was just dropped on the trash zone. The live
+   tree row may be removed by a watcher refresh at any moment, so this ghost
+   owns the destruction animation: tint toward danger, dissolve and sink. */
+.trash-ghost {
+  z-index: 50;
+  pointer-events: none;
+  background: transparent;
+  animation: tree-row-destroy 0.45s var(--ease-out) forwards;
+}
+@keyframes tree-row-destroy {
+  0% { opacity: 1; transform: none; filter: none; }
+  35% { color: var(--danger); }
+  100% {
+    opacity: 0;
+    transform: scale(0.92) translateY(10px);
+    filter: grayscale(1);
+    color: var(--danger);
+  }
 }
 
 
