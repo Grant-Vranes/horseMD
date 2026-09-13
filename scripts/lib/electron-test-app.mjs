@@ -43,7 +43,7 @@ export async function launchBuiltElectron({
     ...appArgs
   ], {
     cwd,
-    env,
+    env: { ...env, ELECTRON_RUN_AS_NODE: undefined },
     stdio: ['ignore', 'pipe', 'pipe']
   })
   child.stdout.on('data', () => {})

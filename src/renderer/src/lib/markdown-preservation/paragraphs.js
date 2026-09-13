@@ -1232,7 +1232,19 @@ export const preserveMiddleEmptyBlock = ({
   const nextChangedRegion = withoutStandaloneEmptyBlockLines(
     next.slice(start, nextEnd)
   )
+  // ProseMirror images are atom nodes: inserting, deleting or moving one
+  // changes NO visible characters in either the changed region or the whole
+  // document (RS-73). The visible-stream comparison below therefore cannot
+  // distinguish a real image edit from a placeholder-only boundary move, and
+  // claiming it here silently dropped the image from the committed source
+  // (paste-image failed integrity validation with a stale candidate).
+  // Images belong to the generic inline/line mappers further down, so any
+  // image syntax in a changed region disqualifies the boundary-only claim.
+  const regionHasImageSyntax = (region) =>
+    /!\[[^\]]*\](?:\([^)]*\)|\[[^\]]*\])/.test(region)
   const boundaryOnly = !hasDedicatedBlockSyntax(next.slice(start, nextEnd)) &&
+    !regionHasImageSyntax(previous.slice(start, previousEnd)) &&
+    !regionHasImageSyntax(next.slice(start, nextEnd)) &&
     sourceVisibleIndex(previousChangedRegion).text === sourceVisibleIndex(nextChangedRegion).text &&
     sourceVisibleIndex(withoutStandaloneEmptyBlockLines(previous)).text ===
       sourceVisibleIndex(withoutStandaloneEmptyBlockLines(next)).text
