@@ -61,3 +61,22 @@ export function resolveToFileUrl(baseDir, src) {
   const url = isWin ? 'file:///' + joined : 'file://' + (joined.startsWith('/') ? joined : '/' + joined)
   return encodeURI(url)
 }
+
+// Display-only URL for a resolved file:// image URL. On a file:// page (the
+// packaged desktop app) file:// subresources load directly. On any other
+// origin (Vite dev server, and non-file embedded hosts) Chromium blocks
+// file:// subresources, so rewrite to the desktop-only local-media://
+// protocol registered by the main process. Standard schemes parse the first
+// path segment as the host, so the fixed host "media" carries the absolute
+// file path in the pathname. Mobile shims have no such protocol and never
+// get here: their window.api.platform is not a desktop value, so they keep
+// whatever src they had.
+const DESKTOP_PLATFORMS = new Set(['darwin', 'win32', 'linux'])
+export function toDisplayImageUrl(fileUrl) {
+  if (!fileUrl || !fileUrl.startsWith('file://')) return fileUrl
+  if (typeof window === 'undefined') return fileUrl
+  if (window.location?.protocol === 'file:') return fileUrl
+  const platform = window.api?.platform
+  if (!DESKTOP_PLATFORMS.has(platform)) return fileUrl
+  return 'local-media://media' + fileUrl.slice('file://'.length)
+}

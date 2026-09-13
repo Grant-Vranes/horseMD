@@ -1,7 +1,7 @@
 import { parserCtx, serializerCtx } from '@milkdown/kit/core'
 import { TextSelection } from '@milkdown/prose/state'
 import { copyToClipboard } from '../ui.js'
-import { dirOf, isRelativePath, resolveToFileUrl } from './editor-images.js'
+import { dirOf, isRelativePath, resolveToFileUrl, toDisplayImageUrl } from './editor-images.js'
 import { resolveLocalLinkToFileUrl } from './editor-local-links.js'
 import {
   copiedPlainText,
@@ -247,7 +247,7 @@ export function mountEditorContentBindings({
     const raw = image.getAttribute('src') || ''
     if (!isRelativePath(raw)) return
     image.dataset.hmResolved = '1'
-    image.setAttribute('src', resolveToFileUrl(baseDir, raw))
+    image.setAttribute('src', toDisplayImageUrl(resolveToFileUrl(baseDir, raw)))
   }
   const scanImages = (root) => {
     if (root.tagName === 'IMG') fixImage(root)

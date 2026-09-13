@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.13.213] - 2026-09-13
+
+### Fixed
+- 开发模式（`npm run dev`，页面为 http://localhost 源）下相对路径图片不显示：Chromium 禁止 http 源加载 `file://` 子资源，图片路径正确也渲染为破图。桌面主进程新增 `local-media://` 特权协议（仅限图片扩展名），非 file:// 源的页面把解析后的图片地址改写为 `local-media://media/<绝对路径>`；生产安装版（file:// 源）行为不变。新增 `npm run test:dev-image-display-ui`，并加强了 `test:image-paste-source-sync-ui` 断言图片真实加载（naturalWidth > 0）。
+
+## [0.13.212] - 2026-09-13
+
+### Fixed
+- 富文本文档中粘贴图片报“检测到富文本与源码不一致”且图片未进入源码：图片是原子节点，在可见文本流中不占字符，`preserveMiddleEmptyBlock` 的占位符边界判断（boundary-only）把图片插入误判为“无可见变化的占位符移动”而直接丢弃，完整性校验随后 fail-closed。现在变更区域含图片语法时不再走该分支，图片插入/移动交给通用行级映射器，粘贴后源码、保存与重开均包含图片（新增 `npm run test:image-paste-source-sync-ui` 回归）。
+
 ## [0.13.211] - 2026-09-13
 
 ### Added

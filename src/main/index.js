@@ -29,7 +29,13 @@ const FILE_RE = new RegExp(`\\.(${FILE_EXTS.join('|')})$`, 'i')
 // the iframe has a real origin ("drawio-local://editor") for postMessage
 // targetOrigin checks; supportFetchAPI lets the webapp fetch its own assets.
 protocol.registerSchemesAsPrivileged([
-  { scheme: 'drawio-local', privileges: { standard: true, secure: true, supportFetchAPI: true } }
+  { scheme: 'drawio-local', privileges: { standard: true, secure: true, supportFetchAPI: true } },
+  // Serves document-relative images as local-media://<abs-path> when the
+  // renderer page is NOT on a file:// origin (dev server, future embedded
+  // hosts). Chromium blocks file:// subresources from http(s) origins, so
+  // dev-mode pasted images rendered broken (#image-dev-display). Image
+  // extensions only, and the renderer only emits this scheme on desktop.
+  { scheme: 'local-media', privileges: { standard: true, secure: true, supportFetchAPI: true } }
 ])
 const backgroundTestMode = process.argv.includes('--horsemd-test-background')
 const inputTraceEnabled = process.argv.includes('--horsemd-input-trace')
@@ -313,6 +319,39 @@ function registerDrawioProtocol() {
   })
 }
 
+// Serves document-relative images over local-media://<abs-path> for renderer
+// pages that cannot load file:// URLs (http dev server origin). Only image
+// extensions are served; anything else is 403 so the scheme cannot become a
+// generic file-read channel.
+const MEDIA_EXT_RE = /\.(png|jpe?g|gif|webp|svg|bmp|avif|ico)$/i
+function registerLocalMediaProtocol() {
+  protocol.handle('local-media', (request) => {
+    let url
+    try {
+      url = new URL(request.url)
+    } catch {
+      return new Response('Bad Request', { status: 400 })
+    }
+    // Standard-scheme URLs are local-media://media/<abs-path>. Chromium parses
+    // the first path segment as the host, so the renderer always uses the
+    // fixed host "media" and the absolute file path rides in the pathname.
+    if (url.host !== 'media') return new Response('Forbidden', { status: 403 })
+    let filePath
+    try {
+      filePath = decodeURIComponent(url.pathname)
+    } catch {
+      return new Response('Bad Request', { status: 400 })
+    }
+    // Windows drive paths arrive as /C:/...; drop the leading slash so
+    // pathToFileURL gets a real path.
+    filePath = normalize(filePath.replace(/^\/(?=[a-zA-Z]:\/)/, ''))
+    if (!MEDIA_EXT_RE.test(filePath)) {
+      return new Response('Forbidden', { status: 403 })
+    }
+    return net.fetch(pathToFileURL(filePath).toString())
+  })
+}
+
 app.whenReady().then(() => {
   // Win/Linux: argv carries the launched file/folder. Merge into the launch
   // queue (macOS open-file events already pushed above). Delivered on the
@@ -343,6 +382,7 @@ app.whenReady().then(() => {
     allowLocalFonts(webContents, permission, details?.requestingUrl || requestingOrigin, details?.isMainFrame)
   )
   registerDrawioProtocol()
+  registerLocalMediaProtocol()
   createWindow()
 
   // Renderer asks for the packaged editor iframe URL. lang is 'zh' | 'en'
