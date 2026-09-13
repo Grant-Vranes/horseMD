@@ -102,10 +102,12 @@ dpkg-deb --contents "$DEB_FILE" >/dev/null
 无效 `.deb`。正式包必须在 Linux 上通过 `dpkg-deb --info`，并至少验证安装、卸载、
 应用菜单启动、Markdown 文件关联、窗口拖动和最小化/最大化/关闭。
 
-`.github/workflows/release.yml` 在 `v*` tag 上运行 Windows、macOS、Ubuntu matrix。
-Linux job 安装桌面构建依赖，打包后执行 `dpkg-deb --info`；由于 electron-builder 对已经
-发布的 Release 可能跳过 draft publish，工作流最后使用
-`gh release upload "$TAG" dist/*.deb --clobber` 明确上传经校验的 `.deb`。
+`.github/workflows/build-desktop.yml` 在 `v*` tag 上运行 Windows、macOS、Ubuntu matrix
+(也支持手动 dispatch,可传版本号覆盖)。Linux job 安装桌面构建依赖,打包后执行
+`dpkg-deb --info` 校验。electron-builder 以 `--publish never` 运行,Release 步骤
+(softprops/action-gh-release)统一把三个平台的产物直接上传到该 tag 的 Release,
+因此不存在 electron-builder 对已发布 Release 跳过 draft publish 的问题,
+也不需要 `gh release upload --clobber` 补传。
 
 主进程输出是 `out/main/index.cjs`。`dev`、`preview` 和 `start` 用 `cross-env` 把可能从
 外部工具继承的 `ELECTRON_RUN_AS_NODE` 清空，避免 Electron 被当作普通 Node 进程启动。

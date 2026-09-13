@@ -3,8 +3,8 @@ name: Develop Build
 # Multi-platform test builds for the develop branch, triggered by dev tags.
 # Push a tag such as `v0.13.210-dev.1` (pattern: v*-dev*) on a develop commit
 # and all three platforms are packaged. Artifacts are uploaded to the workflow
-# run only; this never creates or updates a GitHub Release (that is release.yml's
-# job on plain v* tags).
+# run only; this never creates or updates a GitHub Release (that is
+# build-desktop.yml's job on plain v* tags).
 on:
   push:
     tags:

@@ -1,7 +1,7 @@
 name: CI
 
 # Sanity check on every push / PR: make sure the app still bundles cleanly.
-# This does NOT package installers (that only runs on tags, in release.yml).
+# This does NOT package installers (that only runs on tags, in build-desktop.yml).
 on:
   push:
     branches: [main]

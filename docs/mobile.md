@@ -211,16 +211,16 @@ npx cap open ios|android   # 出包 / 真机调试
 
 - **`.github/workflows/ci.yml`**:push/PR 到 `main` → 只跑桌面 `npm run build` 校验。
   不打 tag、不打包、**完全不碰安卓**。
-- **`.github/workflows/release.yml`**:**仅当推 `v*` 标签时**触发,只打 **Windows +
-  macOS** 安装包并发到**草稿** Release。**不构建安卓**,CI 里也没有 keystore(密钥被
-  gitignore,未入库)。
+- **`.github/workflows/build-desktop.yml`**:**仅当推 `v*` 标签时**触发(也支持手动
+  dispatch),打 **Windows + macOS + Linux** 安装包并直接发到该 tag 的 Release。**不构建
+  安卓**,CI 里也没有 keystore(密钥被 gitignore,未入库)。
 
 → **合并到 main 不会自动发版**;只有手动推 `vX.Y.Z` 标签才触发桌面打包。
 
 **要随版本发安卓 APK,两条路:**
 1. **手动(简单)**:本地 `npm run dist:android` 出签名包,手动传到那次 GitHub Release
    的附件(密钥只在本地)。
-2. **CI 自动**:给 `release.yml` 加安卓 job——把 keystore(base64)+ 密码存成
+2. **CI 自动**:给 `build-desktop.yml` 加安卓 job——把 keystore(base64)+ 密码存成
    GitHub Actions **Secrets**,CI 里解码 + `assembleRelease` + 上传。一次性配置。
 
 **移动端当前状态(截至合并)**:`feature/mobile` 已以合并提交并入 `main`(未发版、未打
