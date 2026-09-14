@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.13.215] - 2026-09-14
+
+### Added
+- 应用内查看 PDF 与图片：侧边栏/打开对话框/启动参数/拖拽打开 `.pdf`、`.png`、`.jpg/.jpeg`、`.gif`、`.webp`、`.svg`、`.bmp`、`.ico`、`.avif` 文件时，以只读查看器标签页打开。PDF 使用 Chromium 内置查看器（翻页/缩放/搜索/目录）；图片查看器提供缩放（含 Ctrl/Cmd+滚轮）、适应宽度、1:1、旋转与另存为。文件缺失或损坏时显示错误状态；查看器标签随会话恢复且永不置脏。移动端暂不支持（capability 关闭）。
+
 ## [0.13.214] - 2026-09-14
 
 ### Added

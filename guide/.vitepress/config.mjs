@@ -55,7 +55,8 @@ export default defineConfig({
           { text: '工作区与文件夹', link: '/basics/workspace' },
           { text: '云同步文件夹', link: '/basics/cloud-sync' },
           { text: '标签页与分屏', link: '/basics/tabs-and-split' },
-          { text: '富文本与源码模式', link: '/basics/rich-and-source' }
+          { text: '富文本与源码模式', link: '/basics/rich-and-source' },
+          { text: '查看 PDF 与图片', link: '/basics/media-viewer' }
         ]
       },
       {
