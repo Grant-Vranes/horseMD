@@ -22,7 +22,10 @@ import {
   dirName,
   joinPath,
   genId,
-  isHeavyDoc
+  isHeavyDoc,
+  isImageName,
+  isPdfName,
+  isMediaDoc
 } from '../paths.js'
 import { fireToast } from '../ui.js'
 import { getSavedDocPosition } from '../lib/doc-positions.js'
@@ -82,6 +85,30 @@ export function useFileOps({
       const existing = tabsRef.current.find((t) => (t.path || '').replace(/\\/g, '/') === norm)
       if (existing) {
         lastId = existing.id
+        remember(path)
+        continue
+      }
+      // Read-only media files (images / PDF) never go through readFile: they
+      // are binary and the tab content stays empty. The viewer resolves the
+      // file itself via local-media/file URLs.
+      if (isImageName(path) || isPdfName(path)) {
+        const id = genId()
+        lastId = id
+        const mediaTab = {
+          id,
+          kind: 'doc',
+          path,
+          title: baseName(path),
+          content: '',
+          savedContent: '',
+          mtimeMs: null,
+          reloadNonce: 0,
+          heavy: false,
+          restoreOffset: null,
+          restoreScrollTop: null
+        }
+        tabsRef.current = [...tabsRef.current, mediaTab]
+        setTabs((prev) => [...prev, mediaTab])
         remember(path)
         continue
       }
@@ -415,6 +442,9 @@ export function useFileOps({
       commitAllLive() // flush any textarea edits in the debounce window before reading
       let tab = tabsRef.current.find((t) => t.id === id)
       if (!tab) return
+      // Media viewer tabs are read-only — Cmd/Ctrl+S must never write an
+      // empty string over the binary file.
+      if (isMediaDoc(tab)) return
       // A rich ProseMirror transaction can already be visible while Milkdown's
       // markdownUpdated callback and React state are still one task behind.
       // Resolve the editor's current document before writing so an immediate
