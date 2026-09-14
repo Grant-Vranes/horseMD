@@ -7260,3 +7260,60 @@ body.dark .milkdown .ProseMirror .hm-review-card-text {
   background: var(--accent);
   margin-left: auto;
 }
+
+/* ---- Read-only media viewer tabs (images + PDF) ---- */
+.media-viewer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.media-toolbar {
+  display: flex;
+  gap: 4px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+  flex: none;
+}
+.media-toolbar button {
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.media-toolbar button:hover { background: var(--hover); }
+.media-toolbar button.is-active { background: var(--hover); color: var(--accent); }
+.media-stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  padding: 12px;
+}
+.media-stage img { transition: width 0.12s var(--ease-out); }
+.media-missing {
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  opacity: 0.75;
+}
+.media-missing-text { color: var(--muted); }
+.media-missing-path {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  word-break: break-all;
+  color: var(--muted);
+}
+.pdf-viewer-frame {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+}

@@ -80,3 +80,16 @@ export function toDisplayImageUrl(fileUrl) {
   if (!DESKTOP_PLATFORMS.has(platform)) return fileUrl
   return 'local-media://media' + fileUrl.slice('file://'.length)
 }
+
+// Build a display file:// URL from an absolute filesystem path (tab.path).
+// Mirrors resolveToFileUrl's URL shape but takes an already-absolute path
+// instead of (baseDir, relativeSrc). encodeURI leaves '#'/'?' literal — same
+// pre-existing caveat as resolveToFileUrl for exotic filenames.
+export function fileUrlForAbsolutePath(p) {
+  const norm = String(p || '').replace(/\\/g, '/')
+  if (!norm) return ''
+  const url = /^[a-zA-Z]:\//.test(norm)
+    ? 'file:///' + norm
+    : 'file://' + (norm.startsWith('/') ? norm : '/' + norm)
+  return encodeURI(url)
+}
