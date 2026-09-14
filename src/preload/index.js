@@ -176,7 +176,8 @@ const api = {
     cloudSync: true,
     nativeDropOpen: true,
     excalidraw: true,
-    drawio: true
+    drawio: true,
+    mediaViewer: true
   }
 }
 
