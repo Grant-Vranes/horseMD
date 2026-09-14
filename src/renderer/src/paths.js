@@ -99,8 +99,21 @@ export const isExcalidrawName = (name) => EXCALIDRAW_RE.test(name || '')
 export const DRAWIO_RE = /\.drawio$/i
 export const isDrawioName = (name) => DRAWIO_RE.test(name || '')
 
+// Read-only media files open in dedicated viewer tabs (Chromium <img> / built-in
+// PDF viewer). Like .excalidraw/.drawio they are NOT plain-text docs (the
+// textarea must never capture them) and stay out of global search (the main
+// process keeps its own MD_EXTS list for search classification).
+export const IMAGE_RE = /\.(png|jpe?g|gif|webp|svg|bmp|ico|avif)$/i
+export const isImageName = (name) => IMAGE_RE.test(name || '')
+export const PDF_RE = /\.pdf$/i
+export const isPdfName = (name) => PDF_RE.test(name || '')
+
+export const isMediaDoc = (tab) =>
+  !!(tab && tab.path && (IMAGE_RE.test(tab.path) || PDF_RE.test(tab.path)))
+
 export const isPlainTextDoc = (tab) =>
-  !!(tab && tab.path && !MD_DOC_RE.test(tab.path) && !EXCALIDRAW_RE.test(tab.path) && !DRAWIO_RE.test(tab.path))
+  !!(tab && tab.path && !MD_DOC_RE.test(tab.path) && !EXCALIDRAW_RE.test(tab.path) &&
+    !DRAWIO_RE.test(tab.path) && !IMAGE_RE.test(tab.path) && !PDF_RE.test(tab.path))
 
 // A valid single path-segment name: no separators / reserved chars, not "."/"..".
 export const isValidName = (name) => !!name && !/[\\/:*?"<>|]/.test(name) && name !== '.' && name !== '..'
