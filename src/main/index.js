@@ -225,6 +225,9 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
+      // Required for Chromium's built-in PDF viewer in media viewer tabs
+      // (read-only display; no additional plugin APIs are exposed).
+      plugins: true,
       spellcheck: true,
       backgroundThrottling: !backgroundTestMode
     }
