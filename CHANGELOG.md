@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.13.216] - 2026-09-14
+
+### Fixed
+- 图片查看器卡顿与缩放体验：缩放改用 GPU 合成的 transform 实现（原来每帧改宽度触发全图重排/重栅格化，大图明显卡顿）；Ctrl/Cmd+滚轮与触控板捏合改为连续指数缩放；新增双击在适应/1:1 之间切换；放大后可用滚动条平移；适应模式随面板尺寸实时重算（分屏拖动不再失准）。
+
 ## [0.13.215] - 2026-09-14
 
 ### Added

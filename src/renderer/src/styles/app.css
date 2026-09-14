@@ -7296,7 +7296,21 @@ body.dark .milkdown .ProseMirror .hm-review-card-text {
   overflow: auto;
   padding: 12px;
 }
-.media-stage img { transition: width 0.12s var(--ease-out); }
+/* Zoom renders via transform: scale() on a composited layer; the sizer box
+   keeps native scrollbar panning correct without re-layout of the bitmap. */
+.media-sizer {
+  position: relative;
+  flex: none;
+}
+.media-sizer img {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-origin: center;
+  user-select: none;
+  max-width: none;
+  max-height: none;
+}
 .media-missing {
   align-items: center;
   justify-content: center;
