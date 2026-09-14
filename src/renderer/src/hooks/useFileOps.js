@@ -28,6 +28,7 @@ import {
   isMediaDoc
 } from '../paths.js'
 import { fireToast } from '../ui.js'
+import { isExcalidrawTab, isDrawioTab, tabSaveExt } from '../paths.js'
 import { EMPTY_EXCALIDRAW_SCENE } from '../lib/excalidraw-scene.js'
 import { EMPTY_DRAWIO_XML } from '../lib/drawio-file.js'
 import { getSavedDocPosition } from '../lib/doc-positions.js'
@@ -177,34 +178,38 @@ export function useFileOps({
     setHome(false)
   }, [t, setTabs, setActiveId, setHome])
 
-  // Create a new file of a specific type from the topbar + flyout. Markdown
-  // keeps the classic pathless scratch tab (named on first save). Excalidraw /
-  // drawio have no meaningful untitled in-editor state here (the canvas editors
-  // are path-driven), so they ask for a destination first, write the minimal
-  // valid template, then open through the normal open path — dedupe, recents
-  // and watchers all stay in one place.
+  // Create a new file of a specific type from the topbar + flyout. Like the
+  // Markdown scratch tab, canvas files are created FIRST as pathless tabs
+  // (title "Untitled") so drawing can start immediately; the first save
+  // (Cmd/Ctrl+S / close prompt) asks for the destination and the tab becomes
+  // a normal .excalidraw / .drawio file. The empty template doubles as the
+  // saved baseline: an untouched new canvas is not dirty, real edits are.
   const newTypedFile = useCallback(
-    async (type) => {
+    (type) => {
       if (type !== 'markdown' && type !== 'excalidraw' && type !== 'drawio') return
       if (type === 'markdown') {
         newTab()
         return
       }
-      const isExcalidraw = type === 'excalidraw'
-      const ext = isExcalidraw ? 'excalidraw' : 'drawio'
-      const target = await window.api.saveAs(`Untitled.${ext}`, {
-        filters: [{ name: isExcalidraw ? 'Excalidraw' : 'Drawio', extensions: [ext] }]
-      })
-      if (!target) return
-      try {
-        await window.api.writeFile(target, isExcalidraw ? EMPTY_EXCALIDRAW_SCENE : EMPTY_DRAWIO_XML)
-      } catch (e) {
-        fireToast(tRef.current('save.failed', { msg: e?.message || String(e) }), { sticky: true })
-        return
+      const content = type === 'excalidraw' ? EMPTY_EXCALIDRAW_SCENE : EMPTY_DRAWIO_XML
+      const id = genId()
+      const tab = {
+        id,
+        kind: 'doc',
+        path: null,
+        fileType: type,
+        title: t('tab.untitled'),
+        content,
+        savedContent: content,
+        mtimeMs: null,
+        reloadNonce: 0
       }
-      await openPaths([target])
+      tabsRef.current = [...tabsRef.current, tab]
+      setTabs((prev) => [...prev, tab])
+      setActiveId(id)
+      setHome(false)
     },
-    [newTab, openPaths, tRef]
+    [newTab, t, setTabs, setActiveId, setHome, tabsRef]
   )
 
   // Open the Settings page as a real tab. Idempotent: if a Settings tab already
@@ -514,14 +519,23 @@ export function useFileOps({
       if (tab.kind === 'settings') return
       let target = tab.path
       if (!target || forceDialog) {
+        // Canvas kinds (.excalidraw/.drawio) keep their own extension and file
+        // filter; everything else defaults to Markdown.
+        const ext = tabSaveExt(tab)
+        const canvas = ext !== 'md'
         // Mobile has no native save dialog: ask for a filename, then write into
         // the local library (see commitMobileSave). Desktop keeps the dialog.
         if (isMobile) {
-          const base = (tab.title || 'Untitled').replace(/\.(md|markdown|mdx)$/i, '')
-          setSaveNameState({ id, value: base + '.md' })
+          const base = (tab.title || 'Untitled').replace(/\.(md|markdown|mdx|excalidraw|drawio)$/i, '')
+          setSaveNameState({ id, value: base + '.' + ext })
           return
         }
-        target = await window.api.saveAs(tab.title.endsWith('.md') ? tab.title : tab.title + '.md')
+        const base = (tab.title || 'Untitled').replace(/\.(md|markdown|mdx|excalidraw|drawio)$/i, '')
+        const defaultName = canvas ? `${base}.${ext}` : (tab.title.endsWith('.md') ? tab.title : tab.title + '.md')
+        target = await window.api.saveAs(
+          defaultName,
+          canvas ? { filters: [{ name: ext === 'excalidraw' ? 'Excalidraw' : 'Drawio', extensions: [ext] }] } : undefined
+        )
         if (!target) return
       }
       await writeTab(tab, target)
@@ -553,7 +567,7 @@ export function useFileOps({
         window.alert(tRef.current('err.invalidName') + name)
         return
       }
-      if (!/\.(md|markdown|mdx)$/i.test(name)) name += '.md'
+      if (!/\.(md|markdown|mdx|excalidraw|drawio)$/i.test(name)) name += '.' + tabSaveExt(tab)
       const target = await window.api.saveAs(name)
       if (!target) return
       await writeTab(tab, target)

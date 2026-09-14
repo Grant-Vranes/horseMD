@@ -111,6 +111,19 @@ export const isPdfName = (name) => PDF_RE.test(name || '')
 export const isMediaDoc = (tab) =>
   !!(tab && tab.path && (IMAGE_RE.test(tab.path) || PDF_RE.test(tab.path)))
 
+// Canvas tab classification. Scratch (pathless) tabs created from the topbar
+// flyout carry an explicit `fileType` so they render as canvas editors and
+// save with the right extension before the first save assigns a real path;
+// saved tabs are classified by their path extension as before.
+export const isExcalidrawTab = (tab) =>
+  !!(tab && (tab.fileType === 'excalidraw' || isExcalidrawName(tab.path)))
+export const isDrawioTab = (tab) =>
+  !!(tab && (tab.fileType === 'drawio' || isDrawioName(tab.path)))
+// Default save extension for a tab: canvas kinds use their own extension,
+// everything else is Markdown (the legacy scratch-tab default).
+export const tabSaveExt = (tab) =>
+  isExcalidrawTab(tab) ? 'excalidraw' : isDrawioTab(tab) ? 'drawio' : 'md'
+
 export const isPlainTextDoc = (tab) =>
   !!(tab && tab.path && !MD_DOC_RE.test(tab.path) && !EXCALIDRAW_RE.test(tab.path) &&
     !DRAWIO_RE.test(tab.path) && !IMAGE_RE.test(tab.path) && !PDF_RE.test(tab.path))

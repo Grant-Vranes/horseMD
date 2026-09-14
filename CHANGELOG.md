@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.13.219] - 2026-09-14
+
+### Changed
+- 新建 Excalidraw / Drawio 改为“先创建后保存”：点击悬浮菜单立即打开未命名空白画布标签，可直接绘制；首次保存（Ctrl/Cmd+S 或关闭提示）时才弹出让选择存储位置，并自动带上 `.excalidraw` / `.drawio` 扩展名与文件类型过滤器。未命名画布标签随会话恢复，重启后仍是画布编辑器且未保存内容不丢失。
+
 ## [0.13.218] - 2026-09-14
 
 ### Added

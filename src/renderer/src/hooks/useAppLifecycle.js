@@ -94,13 +94,17 @@ export function useAppLifecycle({
       const created = untitled.map((u) => ({
         id: genId(),
         path: null,
+        // Canvas scratch tabs (new Excalidraw/Drawio from the topbar flyout)
+        // keep their kind across restarts so they reopen as canvas editors and
+        // save with the right extension.
+        ...(u.fileType ? { fileType: u.fileType } : {}),
         title: u.title || tRef.current('tab.untitled'),
         content: u.content,
         // No prior save, so the baseline is empty → the tab shows as unsaved.
         savedContent: '',
         mtimeMs: null,
         reloadNonce: 0,
-        heavy: isHeavyDoc(u.content)
+        heavy: u.fileType ? false : isHeavyDoc(u.content)
       }))
       tabsRef.current = [...tabsRef.current, ...created]
       setTabs((prev) => [...prev, ...created])
@@ -149,7 +153,7 @@ export function useAppLifecycle({
       // don't keep coming back. Saved files are reopened from disk instead.
       untitled: tabs
         .filter((t) => t.kind !== 'settings' && !t.path && isTabDirty(t) && (t.content || '').trim())
-        .map((t) => ({ title: t.title, content: t.content })),
+        .map((t) => ({ title: t.title, content: t.content, fileType: t.fileType })),
       activePath
     }
     sessionRef.current = data

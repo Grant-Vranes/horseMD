@@ -1608,6 +1608,8 @@ body.resizing-pane .pane-left-resizer::before {
   height: 100%;
   gap: 2px;
   overflow: hidden;
+  /* Anchor for the overflow edge fades (.tabs-fade). */
+  position: relative;
 }
 .tabs-scroll {
   display: flex;
@@ -1621,6 +1623,31 @@ body.resizing-pane .pane-left-resizer::before {
   min-width: 0;
 }
 .tabs-scroll::-webkit-scrollbar { display: none; }
+
+/* Edge fades for an overflowing tab strip: gradients painted over the first/
+   last few pixels, fading into the topbar background. Purely decorative —
+   pointer-events: none lets swipes pass through to the strip, and no-drag
+   keeps the OS from swallowing wheel events (see .tabs-scroll.can-scroll). */
+.tabs-fade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 28px;
+  pointer-events: none;
+  -webkit-app-region: no-drag;
+  opacity: 0;
+  transition: opacity var(--dur-normal) var(--ease-out);
+  z-index: 1;
+}
+.tabs-fade.left {
+  left: 0;
+  background: linear-gradient(to right, var(--bg-elevated), transparent);
+}
+.tabs-fade.right {
+  right: 0;
+  background: linear-gradient(to left, var(--bg-elevated), transparent);
+}
+.tabs-fade.visible { opacity: 1; }
 
 .tab {
   display: flex;

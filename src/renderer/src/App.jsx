@@ -60,7 +60,7 @@ import { useSystemColorScheme } from './hooks/useSystemColorScheme.js'
 import { useDropOpen } from './hooks/useDropOpen.js'
 import { buildElectronAcceleratorPayload } from './lib/commands/electron-accelerators.js'
 import { createMenuHandlers, useGlobalKeys, useCommands } from './lib/menuHandlers.js'
-import { isAbsolutePath, isPlainTextDoc, isExcalidrawName, isDrawioName, isMediaDoc, loadSession, loadFolderRootsFromSession } from './paths.js'
+import { isAbsolutePath, isPlainTextDoc, isExcalidrawName, isDrawioName, isExcalidrawTab, isDrawioTab, isMediaDoc, loadSession, loadFolderRootsFromSession } from './paths.js'
 import { blobToBase64 } from './lib/excalidraw-export.js'
 import { createReviewActions } from './lib/reviewActions.js'
 import { createEditorApiRegistry } from './lib/editor-api-registry.js'
@@ -561,7 +561,7 @@ export default function App() {
 
   const exportExcalidrawImage = useCallback(async (id, format) => {
     const tab = tabsRef.current.find((x) => x.id === id)
-    if (!tab || !isExcalidrawName(tab.path)) return
+    if (!tab || !isExcalidrawTab(tab)) return
     const api = editorApis.current[id]
     if (!api?.getSceneJson) {
       window.alert(tRef.current('error.excalidrawExportUnavailable'))
@@ -586,7 +586,7 @@ export default function App() {
 
   const exportDrawioImage = useCallback(async (id, format) => {
     const tab = tabsRef.current.find((x) => x.id === id)
-    if (!tab || !isDrawioName(tab.path)) return
+    if (!tab || !isDrawioTab(tab)) return
     const api = editorApis.current[id]
     if (!api?.exportPng) {
       window.alert(tRef.current('error.drawioExportUnavailable'))

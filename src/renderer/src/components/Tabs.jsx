@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Icon } from './icons.jsx'
 import { useI18n } from '../i18n.jsx'
-import { isMarkdownName, isExcalidrawName, isDrawioName } from '../paths.js'
+import { isMarkdownName, isExcalidrawName, isDrawioName, isExcalidrawTab, isDrawioTab } from '../paths.js'
 import { copyToClipboard } from '../ui.js'
 import { labelWithShortcut } from '../lib/commands/shortcut-labels.js'
 import ExportContextSubmenu from './ExportContextSubmenu.jsx'
@@ -40,6 +40,45 @@ export default function Tabs({
   // clear ✕ (the unsaved state is shown in the bottom bar, not as a tab dot).
   const isMobile = window.api.platform === 'ios' || window.api.platform === 'android'
   const scrollRef = useRef(null)
+  // Whether the strip currently overflows. When it does, the strip must opt out
+  // of -webkit-app-region: drag (see app.css): drag regions swallow wheel and
+  // touch events at the OS level, which made horizontal scrolling work only
+  // while the pointer happened to sit on a tab pill. canScroll also gates the
+  // edge fades; fadeLeft/fadeRight show when content is hidden beyond each edge.
+  const [canScroll, setCanScroll] = useState(false)
+  const [fadeLeft, setFadeLeft] = useState(false)
+  const [fadeRight, setFadeRight] = useState(false)
+
+  // Keep overflow state in sync: tab count changes, renames that change widths,
+  // window resizes, and user scrolling all flip it.
+  useEffect(() => {
+    const strip = scrollRef.current
+    if (!strip) return
+    const update = () => {
+      const max = strip.scrollWidth - strip.clientWidth
+      setCanScroll(max > 1)
+      setFadeLeft(strip.scrollLeft > 1)
+      setFadeRight(strip.scrollLeft < max - 1)
+    }
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(strip)
+    // Scroll position changes (user swipes, scrollIntoView on activation) also
+    // flip the fades.
+    strip.addEventListener('scroll', update, { passive: true })
+    // Tab pills are children; their width changes (add/remove/rename/title
+    // truncate) don't always resize the strip itself, so observe them too.
+    const children = Array.from(strip.children)
+    const ro2 = new ResizeObserver(update)
+    children.forEach((child) => ro2.observe(child))
+    window.addEventListener('resize', update)
+    return () => {
+      ro.disconnect()
+      ro2.disconnect()
+      strip.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
+    }
+  }, [tabs])
 
   // A plain wheel over the tab strip scrolls it horizontally: trackpads send a
   // vertical delta (Shift+wheel is the OS-level escape hatch, but the strip is
@@ -90,7 +129,7 @@ export default function Tabs({
 
   return (
     <div className="tabs">
-      <div className="tabs-scroll" ref={scrollRef}>
+      <div className={`tabs-scroll${canScroll ? ' can-scroll' : ''}`} ref={scrollRef}>
         {tabs.map((tab, index) => {
           const dirty = isTabDirty(tab)
           const isLeft = tab.id === activeId
@@ -147,6 +186,15 @@ export default function Tabs({
           )
         })}
       </div>
+      {/* Edge fades: shown only while content is hidden beyond that edge. They
+          are pure paint (pointer-events: none, no-drag) so swipes over them
+          reach the strip underneath. */}
+      {canScroll && (
+        <>
+          <div className={`tabs-fade left${fadeLeft ? ' visible' : ''}`} aria-hidden="true" />
+          <div className={`tabs-fade right${fadeRight ? ' visible' : ''}`} aria-hidden="true" />
+        </>
+      )}
       <button className="tab-new" title={labelWithShortcut(t('tab.new'), 'file.new', effectiveKeybindings)} onClick={onNew}>
         <Icon name="plus" size={16} />
       </button>
@@ -212,7 +260,7 @@ export default function Tabs({
                       onExportPandoc={onExportPandoc ? (format) => onExportPandoc(tab.path, format) : undefined}
                     />
                   )}
-                  {isExcalidrawName(tab.title) && window.api.capabilities?.excalidraw && (
+                  {isExcalidrawTab(tab) && window.api.capabilities?.excalidraw && (
                     <>
                       <button className="tab-menu-item" onClick={run(() => onExportExcalidraw?.(tab.id, 'png'))}>
                         {t('cmd.exportExcalidrawPng')}
@@ -222,7 +270,7 @@ export default function Tabs({
                       </button>
                     </>
                   )}
-                  {isDrawioName(tab.title) && window.api.capabilities?.drawio && (
+                  {isDrawioTab(tab) && window.api.capabilities?.drawio && (
                     <>
                       <button className="tab-menu-item" onClick={run(() => onExportDrawio?.(tab.id, 'png'))}>
                         {t('cmd.exportDrawioPng')}

@@ -5,7 +5,7 @@ description: 在 HorseMD 中创建文档、打开文件并理解保存状态。
 
 # 新建、打开与保存
 
-<span class="version-badge">适用于 HorseMD v0.13.218</span>
+<span class="version-badge">适用于 HorseMD v0.13.219</span>
 
 ## 新建文档
 
@@ -13,9 +13,9 @@ description: 在 HorseMD 中创建文档、打开文件并理解保存状态。
 
 鼠标悬停在顶栏加号上会弹出新建菜单，可以直接创建三种类型的文件：
 
-- **新建 Markdown**：与点击加号相同，创建临时草稿。
-- **新建 Excalidraw 白板**：选择保存位置后创建 `.excalidraw` 文件，并在白板画布中打开。
-- **新建 Drawio 图表**：选择保存位置后创建 `.drawio` 文件，并在图表编辑器中打开。
+- **新建 Markdown**：与点击加号相同，创建临时草稿，首次保存时选择位置。
+- **新建 Excalidraw 白板**：立即创建一个未命名空白画布标签，可以直接绘制；首次保存（`Ctrl/Cmd+S` 或关闭确认）时选择存储位置，自动使用 `.excalidraw` 扩展名。
+- **新建 Drawio 图表**：同上，首次保存时自动使用 `.drawio` 扩展名。
 
 ## 打开已有文件
 

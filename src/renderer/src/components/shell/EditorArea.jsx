@@ -15,7 +15,7 @@
 // chunked-load flow take over exactly as before.
 import { Suspense, lazy, useRef } from 'react'
 import { Icon } from '../icons.jsx'
-import { isDrawioName, isExcalidrawName, isMediaDoc, isPdfName, isPlainTextDoc, shouldUseRichContentVisibility } from '../../paths.js'
+import { isDrawioName, isExcalidrawName, isDrawioTab, isExcalidrawTab, isMediaDoc, isPdfName, isPlainTextDoc, shouldUseRichContentVisibility } from '../../paths.js'
 import { attachSourceCaret } from '../editor-source-caret.js'
 import { updateTextareaSourceFromDom } from '../../source-text-fidelity.js'
 
@@ -123,8 +123,8 @@ export default function EditorArea({
         // intentionally distinct from `split`, which shows TWO documents.
         const heavyAsSource = tab.heavy && !richForced.has(tab.id)
         const plainText = isPlainTextDoc(tab)
-        const excalidrawDoc = isExcalidrawName(tab.path)
-        const drawioDoc = isDrawioName(tab.path)
+        const excalidrawDoc = isExcalidrawTab(tab)
+        const drawioDoc = isDrawioTab(tab)
         const mediaDoc = isMediaDoc(tab)
         const mediaEnabled = window.api?.capabilities?.mediaViewer === true
         const drawioEnabled = window.api?.capabilities?.drawio === true
