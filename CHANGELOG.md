@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.13.220] - 2026-09-14
+
+### Fixed
+- **Drawio 画布保存失效**：修复新版 drawio 嵌入协议下真实绘制内容无法标记标签页为已修改的问题。drawio 网页端在每次修改时发送的是 `{event:'autosave'}` 消息（旧版本监听的是 `save`），导致绘制的图表从未被保存管道感知：保存按钮不出现、保存写出的是初始空白 XML。现在 autosave 消息正确驱动脏状态与实时内容，画布内 `File > Save` / `Ctrl/Cmd+S`（由 iframe 捕获、宿主不可见）也会触发 HorseMD 的实际保存流程。
+- **Excalidraw 保存后无法映射到保存位置**：Excalidraw 自带菜单的「Save to disk」（导出对话框）会把 `.excalidraw` 文件下载到系统下载目录而不映射到当前标签页，「Open」会绕过标签路径直接替换画布内容。现在这两项在 HorseMD 内被禁用，保存统一走 HorseMD 的保存流程（悬浮保存按钮 / `Ctrl/Cmd+S`），确保文件始终保存到选定位置并映射到标签页；导出图片功能保留。
+- 新增 `test:canvas-save-ui` 回归脚本：覆盖未命名画布标签首存映射、二次原位保存、drawio autosave 脏标记与画布内显式保存全链路（通过主进程 `HORSEMD_TEST_SAVE_AS_DIR` 测试钩子固定保存位置）。
+
 ## [0.13.219] - 2026-09-14
 
 ### Changed

@@ -130,6 +130,18 @@ export default function ExcalidrawEditor({ tab, onChange, registerApi }) {
         initialData={initial || undefined}
         onChange={handleSceneChange}
         excalidrawAPI={setExcalidrawApi}
+        UIOptions={{
+          canvasActions: {
+            // Excalidraw's own persistence paths bypass the tab: "Open" swaps
+            // content via a file picker and the Export dialog's "Save to disk"
+            // downloads an unmapped .excalidraw file. The host save flow (FAB /
+            // Cmd+S, which falls through to the host keybinding since
+            // saveToActiveFile needs a fileHandle) owns persistence. Image
+            // export stays available.
+            loadScene: false,
+            export: false
+          }
+        }}
       />
     </div>
   )

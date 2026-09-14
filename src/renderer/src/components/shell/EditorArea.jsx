@@ -89,6 +89,7 @@ export default function EditorArea({
   onCloseSourceRichSplit,
   onToggleSourceRichSplit,
   updateContent,
+  onRequestSave,
   markRichEditPending,
   t
 }) {
@@ -225,6 +226,7 @@ export default function EditorArea({
                     tab={tab}
                     onChange={(xml) => updateContent(tab.id, xml, false)}
                     registerApi={(api) => registerEditorApi(tab.id, api)}
+                    onRequestSave={() => onRequestSave?.(tab.id)}
                   />
                 </Suspense>
               ) : (

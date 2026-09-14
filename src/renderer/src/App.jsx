@@ -1345,6 +1345,7 @@ export default function App() {
             onCloseSourceRichSplit={closeSourceRichSplit}
             onToggleSourceRichSplit={toggleSourceRichSplit}
             updateContent={updateContent}
+            onRequestSave={saveTab}
             markRichEditPending={markRichEditPending}
             t={t}
           />

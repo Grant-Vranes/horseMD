@@ -9,11 +9,14 @@
 //                      updateContent (dirty marking is tab-state's job)
 //   props.registerApi  (api|null) => void — exposes getXml/exportPng/exportSvg
 //                      to the save/export pipelines via editorApis
+//   props.onRequestSave () => void — user-invoked save inside the canvas
+//                      (File > Save / Cmd+S) must trigger the host save flow
 //
 // Embed protocol (drawio ?embed=1&proto=json), JSON-stringified messages:
 //   iframe -> host: {event: 'init'}                     editor ready
 //   host   -> iframe: {action: 'load', xml, autosave: 1}
-//   iframe -> host: {event: 'save', xml}                content changed
+//   iframe -> host: {event: 'autosave', xml}            content changed
+//   iframe -> host: {event: 'save', xml}                explicit user save
 //   host   -> iframe: {action: 'export', format}        export request
 //   iframe -> host: {event: 'export', format, data}     data URL response
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -25,7 +28,7 @@ const EXPORT_TIMEOUT_MS = 20000
 const INIT_TIMEOUT_MS = 30000
 const FRAME_ORIGIN = 'drawio-local://editor'
 
-export default function DrawioEditor({ tab, onChange, registerApi }) {
+export default function DrawioEditor({ tab, onChange, registerApi, onRequestSave }) {
   const { t, language } = useI18n()
   // Parse exactly once per mount; tab.content changes only through our own
   // onChange/save cycle, and the load message must not reset while editing.
@@ -56,6 +59,11 @@ export default function DrawioEditor({ tab, onChange, registerApi }) {
   const readyRef = useRef(false)
   const onChangeRef = useRef(onChange)
   onChangeRef.current = onChange
+  // Explicit in-canvas save (File > Save / Cmd+S inside the iframe) hands off
+  // to the host save flow — the iframe swallows Cmd+S, so the host keybinding
+  // never sees it.
+  const onRequestSaveRef = useRef(onRequestSave)
+  onRequestSaveRef.current = onRequestSave
 
   const publishChange = useCallback((xml) => {
     if (timerRef.current) clearTimeout(timerRef.current)
@@ -90,15 +98,36 @@ export default function DrawioEditor({ tab, onChange, registerApi }) {
       postToFrame({ action: 'load', xml: initialXml || undefined, autosave: 1 })
       return
     }
-    if (msg.event === 'save' && typeof msg.xml === 'string' && msg.xml.length > 0) {
+    // The vendored webapp posts TWO distinct change events: debounced
+    // {event:'autosave', xml} on every model edit, and {event:'save', xml}
+    // only for explicit user saves (File > Save / Cmd+S inside the iframe).
+    // Both must refresh latestXmlRef; 'autosave' drives dirty marking and
+    // 'save' additionally triggers the host save flow.
+    if (
+      (msg.event === 'autosave' || msg.event === 'save') &&
+      typeof msg.xml === 'string' &&
+      msg.xml.length > 0
+    ) {
       if (holdIframeSavesRef.current) return
       latestXmlRef.current = msg.xml
       if (lastBaselineRef.current === null) {
         // First observation after mount: baseline, not an edit.
         lastBaselineRef.current = msg.xml
-        return
+      } else if (msg.xml !== lastBaselineRef.current) {
+        if (msg.event === 'save') {
+          // Explicit save flushes the debounce immediately so the tab state
+          // and getXml() carry the exact xml the user asked to save.
+          if (timerRef.current) {
+            clearTimeout(timerRef.current)
+            timerRef.current = null
+          }
+          onChangeRef.current?.(msg.xml)
+          lastBaselineRef.current = msg.xml
+        } else {
+          publishChange(msg.xml)
+        }
       }
-      publishChange(msg.xml)
+      if (msg.event === 'save') onRequestSaveRef.current?.()
       return
     }
     if (msg.event === 'export' && typeof msg.data === 'string') {

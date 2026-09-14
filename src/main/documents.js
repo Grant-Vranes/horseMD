@@ -1,4 +1,5 @@
 import { dialog } from 'electron'
+import { join } from 'node:path'
 import { createPdfExportService } from './pdf-export.js'
 import { createPandocExportService } from './pandoc-export.js'
 import { createHtmlExportService } from './html-export.js'
@@ -33,6 +34,12 @@ export function registerDocumentIpc(ipcMain, { getMainWindow, getUserDataPath, m
   })
 
   ipcMain.handle('dialog:saveAs', async (_event, defaultName, opts) => {
+    // Test-only hook: UI regression scripts cannot drive the native save
+    // panel, so they pin the destination directory via env (the defaultName
+    // supplies the filename). Never set in normal use.
+    if (process.env.HORSEMD_TEST_SAVE_AS_DIR) {
+      return join(process.env.HORSEMD_TEST_SAVE_AS_DIR, defaultName || 'Untitled.md')
+    }
     const res = await dialog.showSaveDialog(getMainWindow(), {
       defaultPath: defaultName || 'Untitled.md',
       filters: opts?.filters || [{ name: 'Markdown', extensions: ['md', 'markdown'] }]
