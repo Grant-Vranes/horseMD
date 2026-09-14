@@ -15,7 +15,7 @@
 // chunked-load flow take over exactly as before.
 import { Suspense, lazy, useRef } from 'react'
 import { Icon } from '../icons.jsx'
-import { isDrawioName, isExcalidrawName, isPlainTextDoc, shouldUseRichContentVisibility } from '../../paths.js'
+import { isDrawioName, isExcalidrawName, isMediaDoc, isPdfName, isPlainTextDoc, shouldUseRichContentVisibility } from '../../paths.js'
 import { attachSourceCaret } from '../editor-source-caret.js'
 import { updateTextareaSourceFromDom } from '../../source-text-fidelity.js'
 
@@ -25,6 +25,8 @@ import { updateTextareaSourceFromDom } from '../../source-text-fidelity.js'
 const Editor = lazy(() => import('../Editor.jsx'))
 const ExcalidrawEditor = lazy(() => import('../ExcalidrawEditor.jsx'))
 const DrawioEditor = lazy(() => import('../DrawioEditor.jsx'))
+const PdfViewer = lazy(() => import('../PdfViewer.jsx'))
+const MediaViewer = lazy(() => import('../MediaViewer.jsx'))
 
 const editorChunkFallback = (
   <div className="editor-skeleton" aria-hidden="true">
@@ -123,10 +125,12 @@ export default function EditorArea({
         const plainText = isPlainTextDoc(tab)
         const excalidrawDoc = isExcalidrawName(tab.path)
         const drawioDoc = isDrawioName(tab.path)
+        const mediaDoc = isMediaDoc(tab)
+        const mediaEnabled = window.api?.capabilities?.mediaViewer === true
         const drawioEnabled = window.api?.capabilities?.drawio === true
         const shouldMountExcalidraw = excalidrawDoc && (inView || mountedIds.has(tab.id))
         const excalidrawEnabled = window.api?.capabilities?.excalidraw === true
-        const isSourceRichSplit = sourceRichSplitMode && isLeft && !plainText && !heavyAsSource && !excalidrawDoc && !drawioDoc
+        const isSourceRichSplit = sourceRichSplitMode && isLeft && !plainText && !heavyAsSource && !excalidrawDoc && !drawioDoc && !mediaDoc
         const onPaneFocus = (pane = null) => {
           focusedTabRef.current = tab.id
           if (split) setFocusedPane(isRight ? 'right' : 'left')
@@ -148,13 +152,13 @@ export default function EditorArea({
         // In global source mode the active Markdown pane shows a textarea too,
         // but its already-mounted Crepe editor stays mounted underneath. That
         // avoids a full re-parse/image reload when switching back to rich.
-        const sourceForActiveRich = (sourceMode || isSourceRichSplit) && isLeft && !plainText && !heavyAsSource && !excalidrawDoc && !drawioDoc
+        const sourceForActiveRich = (sourceMode || isSourceRichSplit) && isLeft && !plainText && !heavyAsSource && !excalidrawDoc && !drawioDoc && !mediaDoc
         const usesTextarea = plainText || heavyAsSource || sourceForActiveRich
         // content-visibility virtualization (see .hm-cv in app.css) is reserved
         // for genuinely huge RICH documents. Medium CJK-heavy docs have enough
         // text to be expensive on Windows, but too few blocks for CV to pay for
         // its estimate-to-real height churn; they use layout containment instead.
-        const richEligible = !plainText && !heavyAsSource && !excalidrawDoc && !drawioDoc
+        const richEligible = !plainText && !heavyAsSource && !excalidrawDoc && !drawioDoc && !mediaDoc
         const largeRich = richEligible && shouldUseRichContentVisibility(tab.content || '')
         const nodes = []
 
@@ -226,6 +230,39 @@ export default function EditorArea({
               ) : (
                 <div className="excalidraw-mobile-placeholder" role="status">
                   {t('drawio.mobilePlaceholder')}
+                </div>
+              )}
+            </div>
+          )
+        }
+
+        if (mediaDoc && (inView || mountedIds.has(tab.id))) {
+          const setMediaHost = (el) => {
+            if (el) {
+              editorHosts.current[tab.id] = el
+              if (isLeft) editorHostRef.current = el
+              return
+            }
+            const existing = editorHosts.current[tab.id]
+            delete editorHosts.current[tab.id]
+            if (isLeft && (!existing || editorHostRef.current === existing)) editorHostRef.current = null
+          }
+          nodes.push(
+            <div
+              key={`media:${tab.id}`}
+              className={`editor-scroll media-scroll${paneClass}`}
+              ref={setMediaHost}
+              style={{ display: inView ? undefined : 'none', order, flex: paneFlex }}
+              onFocusCapture={() => onPaneFocus('rich')}
+              onMouseDownCapture={() => onPaneFocus('rich')}
+            >
+              {mediaEnabled ? (
+                <Suspense fallback={editorChunkFallback}>
+                  {isPdfName(tab.path) ? <PdfViewer tab={tab} /> : <MediaViewer tab={tab} />}
+                </Suspense>
+              ) : (
+                <div className="excalidraw-mobile-placeholder" role="status">
+                  {t('mediaViewer.mobilePlaceholder')}
                 </div>
               )}
             </div>
