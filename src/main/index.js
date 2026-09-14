@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu, protocol, shell, net, safeStorage, session, clipboard } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, Menu, protocol, shell, net, safeStorage, session, clipboard } from 'electron'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { dirname, join, basename, extname, normalize, resolve, sep } from 'node:path'
 import fs from 'node:fs/promises'
@@ -22,9 +22,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const MD_EXTS = ['md', 'markdown', 'mdx', 'txt']
 const MD_RE = new RegExp(`\\.(${MD_EXTS.join('|')})$`, 'i')
 // Openable file types: open-dialog filter, launch args, sidebar tree.
-// Superset of MD_EXTS — .excalidraw/.drawio open in canvas editors but must
+// Superset of MD_EXTS — .excalidraw/.drawio open in canvas editors and
+// image/pdf extensions open in read-only viewer tabs, but all of them must
 // stay OUT of global search (registerGlobalSearchIpc keeps MD_RE below).
-const FILE_EXTS = [...MD_EXTS, 'excalidraw', 'drawio']
+const FILE_EXTS = [...MD_EXTS, 'excalidraw', 'drawio', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico', 'avif', 'pdf']
 const FILE_RE = new RegExp(`\\.(${FILE_EXTS.join('|')})$`, 'i')
 // diagrams.net editor iframe (see registerDrawioProtocol). standard+secure so
 // the iframe has a real origin ("drawio-local://editor") for postMessage
@@ -320,13 +321,13 @@ function registerDrawioProtocol() {
   })
 }
 
-// Serves document-relative images over local-media://<abs-path> for renderer
-// pages that cannot load file:// URLs (http dev server origin). Only image
-// extensions are served; anything else is 403 so the scheme cannot become a
-// generic file-read channel.
-const MEDIA_EXT_RE = /\.(png|jpe?g|gif|webp|svg|bmp|avif|ico)$/i
+// Serves document-relative images and PDF viewer tabs over local-media://
+// <abs-path> for renderer pages that cannot load file:// URLs (http dev server
+// origin). Only image/PDF extensions are served; anything else is 403 so the
+// scheme cannot become a generic file-read channel.
+const MEDIA_EXT_RE = /\.(png|jpe?g|gif|webp|svg|bmp|avif|ico|pdf)$/i
 function registerLocalMediaProtocol() {
-  protocol.handle('local-media', (request) => {
+  protocol.handle('local-media', async (request) => {
     let url
     try {
       url = new URL(request.url)
@@ -349,7 +350,13 @@ function registerLocalMediaProtocol() {
     if (!MEDIA_EXT_RE.test(filePath)) {
       return new Response('Forbidden', { status: 403 })
     }
-    return net.fetch(pathToFileURL(filePath).toString())
+    const res = await net.fetch(pathToFileURL(filePath).toString())
+    // The built-in PDF viewer only activates for application/pdf responses.
+    if (/\.pdf$/i.test(filePath)) {
+      const body = await res.arrayBuffer()
+      return new Response(body, { headers: { 'content-type': 'application/pdf' } })
+    }
+    return res
   })
 }
 
@@ -478,6 +485,24 @@ ipcMain.handle('shell:openFileUrl', async (event, url) => {
   }
 })
 ipcMain.handle('shell:showInFolder', async (_e, path) => shell.showItemInFolder(path))
+
+// Read-only media viewer "Save as…" — copies the viewed file to a
+// user-chosen destination without opening a write channel into the renderer.
+ipcMain.handle('media:saveAs', async (_e, sourcePath) => {
+  try {
+    if (typeof sourcePath !== 'string' || !MEDIA_EXT_RE.test(sourcePath)) {
+      return { error: 'unsupported file' }
+    }
+    const res = await dialog.showSaveDialog(getMainWindow(), {
+      defaultPath: basename(sourcePath)
+    })
+    if (res.canceled || !res.filePath) return { canceled: true }
+    await fs.copyFile(sourcePath, res.filePath)
+    return { canceled: false, path: res.filePath }
+  } catch (e) {
+    return { error: e?.message || String(e) }
+  }
+})
 ipcMain.handle('clipboard:writeText', (event, text) => {
   if (!mainWindow || event.sender.id !== mainWindow.webContents.id) return false
   clipboard.writeText(String(text ?? ''))
