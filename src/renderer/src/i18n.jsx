@@ -127,6 +127,9 @@ export const STRINGS = {
 
     // tabs
     'tab.new': 'New tab',
+    'topbar.newMarkdown': 'New Markdown',
+    'topbar.newExcalidraw': 'New Excalidraw Whiteboard',
+    'topbar.newDrawio': 'New Drawio Diagram',
     'tab.untitled': 'Untitled',
 
     // sidebar
@@ -894,6 +897,9 @@ export const STRINGS = {
     'hint.save': '保存',
 
     'tab.new': '新建标签',
+    'topbar.newMarkdown': '新建 Markdown',
+    'topbar.newExcalidraw': '新建 Excalidraw 白板',
+    'topbar.newDrawio': '新建 Drawio 图表',
     'tab.untitled': '未命名',
 
     'side.noFolder': '未打开文件夹',

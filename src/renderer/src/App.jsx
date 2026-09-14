@@ -646,6 +646,7 @@ export default function App() {
   const {
     openPaths,
     newTab,
+    newTypedFile,
     openSettingsTab,
     reorderTabs,
     updateContent,
@@ -1196,6 +1197,7 @@ export default function App() {
         }}
         onClose={closeTab}
         onNew={newTab}
+        onNewTyped={newTypedFile}
         onCloseOthers={closeOthers}
         onOpenRight={openRight}
         onRename={renameTabFile}

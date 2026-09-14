@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.13.218] - 2026-09-14
+
+### Added
+- 顶栏右上角加号按钮支持悬停弹出新建菜单：可直接新建 Markdown、Excalidraw 白板（`.excalidraw`）或 Drawio 图表（`.drawio`）文件。后两者会先选择保存位置并写入空白模板后打开；点击加号仍保持原有的快速新建 Markdown 行为；移动端无悬停，点按加号弹出菜单。
+
 ## [0.13.216] - 2026-09-14
 
 ### Fixed

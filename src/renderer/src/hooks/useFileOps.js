@@ -28,6 +28,8 @@ import {
   isMediaDoc
 } from '../paths.js'
 import { fireToast } from '../ui.js'
+import { EMPTY_EXCALIDRAW_SCENE } from '../lib/excalidraw-scene.js'
+import { EMPTY_DRAWIO_XML } from '../lib/drawio-file.js'
 import { getSavedDocPosition } from '../lib/doc-positions.js'
 import { saveSourceSyncRecovery } from '../lib/source-sync-recovery.js'
 import { useWorkspace } from './useWorkspace.js'
@@ -174,6 +176,36 @@ export function useFileOps({
     setActiveId(id)
     setHome(false)
   }, [t, setTabs, setActiveId, setHome])
+
+  // Create a new file of a specific type from the topbar + flyout. Markdown
+  // keeps the classic pathless scratch tab (named on first save). Excalidraw /
+  // drawio have no meaningful untitled in-editor state here (the canvas editors
+  // are path-driven), so they ask for a destination first, write the minimal
+  // valid template, then open through the normal open path — dedupe, recents
+  // and watchers all stay in one place.
+  const newTypedFile = useCallback(
+    async (type) => {
+      if (type !== 'markdown' && type !== 'excalidraw' && type !== 'drawio') return
+      if (type === 'markdown') {
+        newTab()
+        return
+      }
+      const isExcalidraw = type === 'excalidraw'
+      const ext = isExcalidraw ? 'excalidraw' : 'drawio'
+      const target = await window.api.saveAs(`Untitled.${ext}`, {
+        filters: [{ name: isExcalidraw ? 'Excalidraw' : 'Drawio', extensions: [ext] }]
+      })
+      if (!target) return
+      try {
+        await window.api.writeFile(target, isExcalidraw ? EMPTY_EXCALIDRAW_SCENE : EMPTY_DRAWIO_XML)
+      } catch (e) {
+        fireToast(tRef.current('save.failed', { msg: e?.message || String(e) }), { sticky: true })
+        return
+      }
+      await openPaths([target])
+    },
+    [newTab, openPaths, tRef]
+  )
 
   // Open the Settings page as a real tab. Idempotent: if a Settings tab already
   // exists, just focus it (never open a second one). Settings tabs are transient
@@ -649,6 +681,7 @@ export function useFileOps({
   return {
     openPaths,
     newTab,
+    newTypedFile,
     openSettingsTab,
     reorderTabs,
     updateContent,

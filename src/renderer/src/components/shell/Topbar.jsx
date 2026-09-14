@@ -4,6 +4,7 @@
 import Tabs from '../Tabs.jsx'
 import { Icon } from '../icons.jsx'
 import ImageHostButton from '../ImageHostButton.jsx'
+import NewFileButton from './NewFileButton.jsx'
 import WindowControls from '../WindowControls.jsx'
 import { labelWithShortcut } from '../../lib/commands/shortcut-labels.js'
 
@@ -21,6 +22,7 @@ export default function Topbar({
   onActivate,
   onClose,
   onNew,
+  onNewTyped,
   onCloseOthers,
   onOpenRight,
   onRename,
@@ -81,13 +83,13 @@ export default function Topbar({
           <Icon name={readOnly ? 'lock' : 'unlock'} size={18} />
         </button>
       )}
-      <button
-        className="icon-btn drag-no"
-        title={labelWithShortcut(t('welcome.newFile'), 'file.new', effectiveKeybindings)}
-        onClick={onNew}
-      >
-        <Icon name="plus" size={18} />
-      </button>
+      <NewFileButton
+        isMobile={isMobile}
+        t={t}
+        effectiveKeybindings={effectiveKeybindings}
+        onNew={onNew}
+        onNewTyped={onNewTyped}
+      />
       {!isMobile && (
         <button
           className={`icon-btn drag-no${split ? ' active' : ''}`}

@@ -541,14 +541,32 @@ button:focus-visible,
 .app.is-mac .topbar { grid-column: 1 / -1; padding-left: 80px; }
 .app.is-mac .activity-bar { grid-row: 2 / -1; }
 /* The whole top bar drags the window; only the actual interactive controls
-   opt out. Crucially the tab STRIP background stays draggable — only the tab
-   pills and buttons are no-drag — so there's a generous grab area up top. */
+   opt out. The tab STRIP background stays draggable while it fits, but once
+   the tabs overflow, the strip must scroll smoothly: wheel/touch events over
+   an app-region: drag area are swallowed by the OS window drag, which made
+   horizontal scrolling work only when the pointer sat on a tab pill. An
+   overflowing strip opts out (can-scroll class, toggled in Tabs.jsx); window
+   dragging is still available on the topbar background and .topbar-spacer. */
 .topbar .tabs,
 .topbar .tabs-scroll { -webkit-app-region: drag; }
+.topbar .tabs-scroll.can-scroll { -webkit-app-region: no-drag; }
 .topbar .drag-no,
 .topbar .tab,
 .topbar .tab-new,
+.topbar .new-file-flyout,
 .topbar input { -webkit-app-region: no-drag; }
+/* Topbar "+" hover flyout (NewFileButton). The flyout itself is fixed-position
+   (measured from the button) because .topbar is overflow:hidden; the wrapper
+   only anchors hover in/out. */
+.new-file-wrap { position: relative; display: flex; }
+.new-file-flyout { min-width: 200px; }
+.new-file-flyout button { display: flex; align-items: center; gap: 9px; }
+.new-file-flyout button:hover { transform: none; }
+.new-file-item-icon {
+  display: inline-flex;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
 /* Always-draggable handle between the tabs and the right-side buttons. The
    min-width is a hard floor so that even when many tabs fill (and scroll) the
    strip, there's still a comfortable area to grab and move the window. */
