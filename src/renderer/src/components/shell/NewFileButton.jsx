@@ -1,7 +1,7 @@
 // Topbar "+" button with a hover flyout: Markdown / Excalidraw / Drawio.
-// Desktop: hovering the button opens the flyout; clicking keeps the classic
-// one-step "new Markdown tab" (menu item does the same). Mobile has no hover:
-// tapping toggles the flyout and Markdown is one of the items.
+// Desktop: hovering (or clicking) the button opens the flyout; a direct click
+// never creates a document on its own. Mobile has no hover: tapping toggles
+// the flyout.
 // The flyout is position:fixed (measured from the button) because .topbar is
 // overflow:hidden and would clip an absolutely-positioned dropdown.
 import { useEffect, useRef, useState } from 'react'
@@ -12,7 +12,6 @@ export default function NewFileButton({
   isMobile,
   t,
   effectiveKeybindings,
-  onNew,
   onNewTyped
 }) {
   const [open, setOpen] = useState(false)
@@ -70,14 +69,12 @@ export default function NewFileButton({
   }
 
   const onButtonClick = () => {
-    if (isMobile) {
-      open ? setOpen(false) : openMenu()
-    } else {
-      // Desktop: click stays the fast "new Markdown tab" path; the flyout is
-      // hover-driven. Close it so a stale flyout doesn't linger.
+    // Click only opens/closes the flyout — never creates a document directly.
+    if (open) {
       cancelClose()
       setOpen(false)
-      onNew()
+    } else {
+      openMenu()
     }
   }
 

@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.13.221] - 2026-09-14
+
+### Changed
+- 顶栏加号按钮的直接点击不再创建新文档：点击（或悬停）只开合新建菜单，三种文件类型（Markdown / Excalidraw / Drawio）统一通过菜单创建。
+
 ## [0.13.220] - 2026-09-14
 
 ### Fixed

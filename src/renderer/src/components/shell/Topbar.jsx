@@ -87,7 +87,6 @@ export default function Topbar({
         isMobile={isMobile}
         t={t}
         effectiveKeybindings={effectiveKeybindings}
-        onNew={onNew}
         onNewTyped={onNewTyped}
       />
       {!isMobile && (
