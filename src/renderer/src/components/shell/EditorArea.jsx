@@ -15,7 +15,7 @@
 // chunked-load flow take over exactly as before.
 import { Suspense, lazy, useRef } from 'react'
 import { Icon } from '../icons.jsx'
-import { isDrawioName, isExcalidrawName, isDrawioTab, isExcalidrawTab, isMediaDoc, isPdfName, isPlainTextDoc, shouldUseRichContentVisibility } from '../../paths.js'
+import { isDrawioName, isExcalidrawName, isDrawioTab, isExcalidrawTab, isCodeDoc, isMediaDoc, isPdfName, isPlainTextDoc, shouldUseRichContentVisibility } from '../../paths.js'
 import { attachSourceCaret } from '../editor-source-caret.js'
 import { updateTextareaSourceFromDom } from '../../source-text-fidelity.js'
 
@@ -27,6 +27,7 @@ const ExcalidrawEditor = lazy(() => import('../ExcalidrawEditor.jsx'))
 const DrawioEditor = lazy(() => import('../DrawioEditor.jsx'))
 const PdfViewer = lazy(() => import('../PdfViewer.jsx'))
 const MediaViewer = lazy(() => import('../MediaViewer.jsx'))
+const CodeEditor = lazy(() => import('../CodeEditor.jsx'))
 
 const editorChunkFallback = (
   <div className="editor-skeleton" aria-hidden="true">
@@ -122,8 +123,11 @@ export default function EditorArea({
           (isRight ? ' hm-pane-right' : isLeft ? ' hm-pane-left' : '') + (isFocusedPane ? ' hm-focused' : '')
         // The source/rich split is ONE tab represented by two surfaces. It is
         // intentionally distinct from `split`, which shows TWO documents.
-        const heavyAsSource = tab.heavy && !richForced.has(tab.id)
-        const plainText = isPlainTextDoc(tab)
+        const heavyAsSource = tab.heavy && !richForced.has(tab.id) && !codeDoc
+        // Code files (.java/.py/.yml/…) get the CodeMirror editor; everything
+        // else that isn't Markdown/canvas/media keeps the fast textarea.
+        const codeDoc = isCodeDoc(tab)
+        const plainText = isPlainTextDoc(tab) && !codeDoc
         const excalidrawDoc = isExcalidrawTab(tab)
         const drawioDoc = isDrawioTab(tab)
         const mediaDoc = isMediaDoc(tab)
@@ -131,7 +135,7 @@ export default function EditorArea({
         const drawioEnabled = window.api?.capabilities?.drawio === true
         const shouldMountExcalidraw = excalidrawDoc && (inView || mountedIds.has(tab.id))
         const excalidrawEnabled = window.api?.capabilities?.excalidraw === true
-        const isSourceRichSplit = sourceRichSplitMode && isLeft && !plainText && !heavyAsSource && !excalidrawDoc && !drawioDoc && !mediaDoc
+        const isSourceRichSplit = sourceRichSplitMode && isLeft && !plainText && !heavyAsSource && !excalidrawDoc && !drawioDoc && !mediaDoc && !codeDoc
         const onPaneFocus = (pane = null) => {
           focusedTabRef.current = tab.id
           if (split) setFocusedPane(isRight ? 'right' : 'left')
@@ -153,13 +157,13 @@ export default function EditorArea({
         // In global source mode the active Markdown pane shows a textarea too,
         // but its already-mounted Crepe editor stays mounted underneath. That
         // avoids a full re-parse/image reload when switching back to rich.
-        const sourceForActiveRich = (sourceMode || isSourceRichSplit) && isLeft && !plainText && !heavyAsSource && !excalidrawDoc && !drawioDoc && !mediaDoc
+        const sourceForActiveRich = (sourceMode || isSourceRichSplit) && isLeft && !plainText && !heavyAsSource && !excalidrawDoc && !drawioDoc && !mediaDoc && !codeDoc
         const usesTextarea = plainText || heavyAsSource || sourceForActiveRich
         // content-visibility virtualization (see .hm-cv in app.css) is reserved
         // for genuinely huge RICH documents. Medium CJK-heavy docs have enough
         // text to be expensive on Windows, but too few blocks for CV to pay for
         // its estimate-to-real height churn; they use layout containment instead.
-        const richEligible = !plainText && !heavyAsSource && !excalidrawDoc && !drawioDoc && !mediaDoc
+        const richEligible = !plainText && !heavyAsSource && !excalidrawDoc && !drawioDoc && !mediaDoc && !codeDoc
         const largeRich = richEligible && shouldUseRichContentVisibility(tab.content || '')
         const nodes = []
 
@@ -234,6 +238,40 @@ export default function EditorArea({
                   {t('drawio.mobilePlaceholder')}
                 </div>
               )}
+            </div>
+          )
+        }
+
+        const shouldMountCode = codeDoc && (inView || mountedIds.has(tab.id))
+        if (shouldMountCode) {
+          const setCodeHost = (el) => {
+            if (el) {
+              editorHosts.current[tab.id] = el
+              if (isLeft) editorHostRef.current = el
+              return
+            }
+            const existing = editorHosts.current[tab.id]
+            delete editorHosts.current[tab.id]
+            if (isLeft && (!existing || editorHostRef.current === existing)) editorHostRef.current = null
+          }
+          nodes.push(
+            <div
+              key={`code:${tab.id}:${tab.reloadNonce}`}
+              className={`editor-scroll code-scroll${paneClass}`}
+              ref={setCodeHost}
+              style={{ display: inView ? undefined : 'none', order, flex: paneFlex }}
+              onFocusCapture={() => onPaneFocus('rich')}
+              onMouseDownCapture={() => onPaneFocus('rich')}
+            >
+              <Suspense fallback={editorChunkFallback}>
+                <CodeEditor
+                  tab={tab}
+                  readOnly={readOnly}
+                  onChange={(text) => updateContent(tab.id, text)}
+                  registerApi={(api) => registerEditorApi(tab.id, api)}
+                  onRequestSave={() => onRequestSave?.(tab.id)}
+                />
+              </Suspense>
             </div>
           )
         }
@@ -451,7 +489,7 @@ export default function EditorArea({
 
       {/* Heavy-doc notice: this Markdown file is shown as plain source to
           stay responsive; offer a one-click switch to the rich editor. */}
-      {!home && activeTab && activeTab.heavy && !richForced.has(activeTab.id) && (
+      {!home && activeTab && activeTab.heavy && !richForced.has(activeTab.id) && !isCodeDoc(activeTab) && (
         <div className="hm-heavy-banner">
           <span>{t('heavy.notice')}</span>
           <button onClick={() => setRichForced((s) => new Set(s).add(activeTab.id))}>

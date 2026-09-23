@@ -22,10 +22,24 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const MD_EXTS = ['md', 'markdown', 'mdx', 'txt']
 const MD_RE = new RegExp(`\\.(${MD_EXTS.join('|')})$`, 'i')
 // Openable file types: open-dialog filter, launch args, sidebar tree.
-// Superset of MD_EXTS — .excalidraw/.drawio open in canvas editors and
-// image/pdf extensions open in read-only viewer tabs, but all of them must
-// stay OUT of global search (registerGlobalSearchIpc keeps MD_RE below).
-const FILE_EXTS = [...MD_EXTS, 'excalidraw', 'drawio', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico', 'avif', 'pdf']
+// Superset of MD_EXTS — .excalidraw/.drawio open in canvas editors,
+// image/pdf extensions open in read-only viewer tabs, and source-code/config
+// extensions open in the code editor (syntax highlighting + line numbers);
+// all of them must stay OUT of global search (registerGlobalSearchIpc keeps
+// MD_RE below). Keep the code list in sync with the renderer's CODE_EXTS
+// (src/renderer/src/paths.js) — the file tree only lists extensions matched here.
+const CODE_EXTS = [
+  'java', 'py', 'pyw', 'yml', 'yaml', 'xml', 'json', 'jsonc', 'json5',
+  'js', 'mjs', 'cjs', 'jsx', 'ts', 'mts', 'cts', 'tsx',
+  'css', 'scss', 'sass', 'less', 'html', 'htm', 'vue', 'svelte',
+  'c', 'h', 'cpp', 'cc', 'cxx', 'hpp', 'hh', 'cs', 'go', 'rs', 'rb', 'php',
+  'swift', 'kt', 'kts', 'scala', 'dart', 'lua', 'pl', 'pm', 'r', 'jl',
+  'sh', 'bash', 'zsh', 'fish', 'bat', 'cmd', 'ps1',
+  'sql', 'graphql', 'gql', 'proto', 'toml', 'ini', 'cfg', 'conf', 'properties',
+  'gradle', 'groovy', 'cmake', 'mk', 'make', 'dockerfile', 'env', 'gitignore',
+  'csv', 'tsv', 'diff', 'patch', 'vim', 'tf', 'hcl', 'nginx', 'sln', 'csproj'
+]
+const FILE_EXTS = [...MD_EXTS, 'excalidraw', 'drawio', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico', 'avif', 'pdf', ...CODE_EXTS]
 const FILE_RE = new RegExp(`\\.(${FILE_EXTS.join('|')})$`, 'i')
 // diagrams.net editor iframe (see registerDrawioProtocol). standard+secure so
 // the iframe has a real origin ("drawio-local://editor") for postMessage

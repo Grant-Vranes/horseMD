@@ -99,6 +99,27 @@ export const isExcalidrawName = (name) => EXCALIDRAW_RE.test(name || '')
 export const DRAWIO_RE = /\.drawio$/i
 export const isDrawioName = (name) => DRAWIO_RE.test(name || '')
 
+// Source-code / config files open in the CodeMirror-based code editor (syntax
+// highlighting + line numbers). Keep this list in sync with the main
+// process's FILE_EXTS (src/main/index.js) so the file tree shows these files.
+export const CODE_EXTS = [
+  'java', 'py', 'pyw', 'yml', 'yaml', 'xml', 'json', 'jsonc', 'json5',
+  'js', 'mjs', 'cjs', 'jsx', 'ts', 'mts', 'cts', 'tsx',
+  'css', 'scss', 'sass', 'less', 'html', 'htm', 'vue', 'svelte',
+  'c', 'h', 'cpp', 'cc', 'cxx', 'hpp', 'hh', 'cs', 'go', 'rs', 'rb', 'php',
+  'swift', 'kt', 'kts', 'scala', 'dart', 'lua', 'pl', 'pm', 'r', 'jl',
+  'sh', 'bash', 'zsh', 'fish', 'bat', 'cmd', 'ps1',
+  'sql', 'graphql', 'gql', 'proto', 'toml', 'ini', 'cfg', 'conf', 'properties',
+  'gradle', 'groovy', 'cmake', 'mk', 'make', 'dockerfile', 'env', 'gitignore',
+  'csv', 'tsv', 'diff', 'patch', 'vim', 'tf', 'hcl', 'nginx', 'sln', 'csproj'
+]
+export const CODE_RE = new RegExp(`\\.(${CODE_EXTS.join('|')})$`, 'i')
+// Extensionless well-known names (Dockerfile, Makefile, .gitignore-style dotfiles).
+export const CODE_BASENAMES = /^(dockerfile|makefile|gnumakefile|cmakelists\.txt|\.gitignore|\.env.*|\.editorconfig|\.npmrc|\.babelrc)$/i
+export const isCodeName = (name) =>
+  !!name && (CODE_RE.test(name) || CODE_BASENAMES.test(name))
+export const isCodeDoc = (tab) => !!(tab && tab.path && isCodeName(tab.path))
+
 // Read-only media files open in dedicated viewer tabs (Chromium <img> / built-in
 // PDF viewer). Like .excalidraw/.drawio they are NOT plain-text docs (the
 // textarea must never capture them) and stay out of global search (the main
@@ -126,7 +147,8 @@ export const tabSaveExt = (tab) =>
 
 export const isPlainTextDoc = (tab) =>
   !!(tab && tab.path && !MD_DOC_RE.test(tab.path) && !EXCALIDRAW_RE.test(tab.path) &&
-    !DRAWIO_RE.test(tab.path) && !IMAGE_RE.test(tab.path) && !PDF_RE.test(tab.path))
+    !DRAWIO_RE.test(tab.path) && !IMAGE_RE.test(tab.path) && !PDF_RE.test(tab.path) &&
+    !isCodeDoc(tab))
 
 // A valid single path-segment name: no separators / reserved chars, not "."/"..".
 export const isValidName = (name) => !!name && !/[\\/:*?"<>|]/.test(name) && name !== '.' && name !== '..'

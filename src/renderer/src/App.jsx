@@ -60,7 +60,7 @@ import { useSystemColorScheme } from './hooks/useSystemColorScheme.js'
 import { useDropOpen } from './hooks/useDropOpen.js'
 import { buildElectronAcceleratorPayload, buildGlobalAcceleratorPayload } from './lib/commands/electron-accelerators.js'
 import { createMenuHandlers, useGlobalKeys, useCommands } from './lib/menuHandlers.js'
-import { isAbsolutePath, isPlainTextDoc, isExcalidrawName, isDrawioName, isExcalidrawTab, isDrawioTab, isMediaDoc, loadSession, loadFolderRootsFromSession } from './paths.js'
+import { isAbsolutePath, isCodeDoc, isPlainTextDoc, isExcalidrawName, isDrawioName, isExcalidrawTab, isDrawioTab, isMediaDoc, loadSession, loadFolderRootsFromSession } from './paths.js'
 import { blobToBase64 } from './lib/excalidraw-export.js'
 import { createReviewActions } from './lib/reviewActions.js'
 import { createEditorApiRegistry } from './lib/editor-api-registry.js'
@@ -797,7 +797,7 @@ export default function App() {
       fireToast(tRef.current('sourceRich.closeDocumentSplit'))
       return
     }
-    if (isMediaDoc(tab) || isPlainTextDoc(tab) || (tab.heavy && !richForced.has(tab.id))) {
+    if (isMediaDoc(tab) || isPlainTextDoc(tab) || isCodeDoc(tab) || (tab.heavy && !richForced.has(tab.id))) {
       fireToast(tRef.current('sourceRich.unavailable'))
       return
     }
@@ -866,6 +866,7 @@ export default function App() {
   const outlineTab = tabs.find((tab) => tab.id === outlineId) || null
   const outlineSourceMode = !!outlineTab && (
     isPlainTextDoc(outlineTab) ||
+    isCodeDoc(outlineTab) ||
     (outlineTab.heavy && !richForced.has(outlineId)) ||
     ((sourceMode || (sourceRichSplitMode && sourceRichFocusedPane === 'source')) && outlineId === activeId)
   )
@@ -944,7 +945,7 @@ export default function App() {
   const findSourceActive = sourceMode ||
     (sourceRichSplitMode && sourceRichFocusedPane === 'source') ||
     isMediaDoc(activeTab) ||
-    isPlainTextDoc(activeTab) || (activeTab?.heavy && !richForced.has(activeTab.id))
+    isPlainTextDoc(activeTab) || isCodeDoc(activeTab) || (activeTab?.heavy && !richForced.has(activeTab.id))
   const { find, setFind, findInputRef, replaceInputRef, replaceRef, runFind, stepFind, closeFind, applyReplace, openFind } =
     useFindReplace({
       editorHostRef,
