@@ -1,11 +1,25 @@
 import { createHash } from 'node:crypto'
 import fs from 'node:fs/promises'
+import { createReadStream } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 
 const INTERNAL_DIRS = new Set(['.horsemd', '.git', '.obsidian', 'node_modules'])
 
 export function sha256(bytes) {
   return createHash('sha256').update(bytes).digest('hex')
+}
+
+// Stream the file in chunks instead of reading whole bytes into memory: a
+// workspace with large attachments (videos, images) would otherwise OOM when
+// every file's full content was buffered just to compute its hash.
+function sha256File(path) {
+  return new Promise((resolve, reject) => {
+    const hash = createHash('sha256')
+    const stream = createReadStream(path, { highWaterMark: 1024 * 1024 })
+    stream.on('data', (chunk) => hash.update(chunk))
+    stream.on('error', reject)
+    stream.on('end', () => resolve(hash.digest('hex')))
+  })
 }
 
 function isInternalRelativePath(path) {
@@ -16,28 +30,34 @@ function isInternalRelativePath(path) {
 // include app-control directories. The result uses portable POSIX paths.
 export async function scanLocalWorkspace(rootPath, { maxFiles = 20000 } = {}) {
   const files = new Map()
-  async function walk(dir) {
-    const entries = await fs.readdir(dir, { withFileTypes: true })
+  async function walk(dir, depth) {
+    if (depth > 32) return
+    let entries
+    try {
+      entries = await fs.readdir(dir, { withFileTypes: true })
+    } catch {
+      return
+    }
     for (const entry of entries) {
       if (entry.isSymbolicLink()) continue
       if (entry.isDirectory() && INTERNAL_DIRS.has(entry.name)) continue
       const fullPath = join(dir, entry.name)
       if (entry.isDirectory()) {
-        await walk(fullPath)
+        await walk(fullPath, depth + 1)
         continue
       }
       if (!entry.isFile()) continue
       if (files.size >= maxFiles) throw new Error(`同步文件数量超过上限（${maxFiles}）。`)
       const relativePath = relative(rootPath, fullPath)
       if (!relativePath || relativePath.startsWith(`..${sep}`) || isInternalRelativePath(relativePath)) continue
-      const [bytes, stat] = await Promise.all([fs.readFile(fullPath), fs.stat(fullPath)])
+      const [sha256Hex, stat] = await Promise.all([sha256File(fullPath), fs.stat(fullPath)])
       files.set(relativePath.replace(/\\/g, '/'), {
-        sha256: sha256(bytes),
-        size: bytes.byteLength,
+        sha256: sha256Hex,
+        size: stat.size,
         mtimeMs: stat.mtimeMs
       })
     }
   }
-  await walk(rootPath)
+  await walk(rootPath, 0)
   return files
 }

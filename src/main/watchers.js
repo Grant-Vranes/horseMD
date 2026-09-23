@@ -18,24 +18,62 @@ export function registerWatcherIpc(ipcMain, { sendToRenderer, watcherFactory = c
   const folderWatchers = new Map()
   const fileWatchers = new Map()
 
+  // Large workspaces exhaust the kernel's per-user inotify watch budget
+  // (Linux default fs.inotify.max_user_watches = 8192) because chokidar holds
+  // one watch handle per directory up to the depth limit. On ENOSPC, rebuild
+  // the watcher with a shallow depth so watching degrades gracefully — the
+  // root and near-root levels keep live updates, and deeper changes surface
+  // via the renderer's existing refresh paths — instead of silently dying.
+  const isEnospc = (error) =>
+    error?.code === 'ENOSPC' || /ENOSPC|System limit for number of file watchers/i.test(String(error?.message || error))
+
+  const watchFolder = (dir, depth) =>
+    watcherFactory.watch(dir, {
+      ignored: (path) => WATCH_IGNORE_RE.test(path) || isRestrictedWatchRoot(path),
+      ignoreInitial: true,
+      depth,
+      followSymlinks: false,
+      awaitWriteFinish: { stabilityThreshold: 200, pollInterval: 50 }
+    })
+
   ipcMain.handle('watch:start', async (_event, dir) => {
     if (folderWatchers.has(dir)) return true
     if (isRestrictedWatchRoot(dir)) return false
 
-    const watcher = watcherFactory.watch(dir, {
-      ignored: (path) => WATCH_IGNORE_RE.test(path) || isRestrictedWatchRoot(path),
-      ignoreInitial: true,
-      depth: 12,
-      followSymlinks: false,
-      awaitWriteFinish: { stabilityThreshold: 200, pollInterval: 50 }
-    })
-    const entry = { watcher, timer: null }
-    watcher.on('error', (error) => console.error('watch:start error (ignored):', error?.message || error))
-    const ping = () => {
-      clearTimeout(entry.timer)
-      entry.timer = setTimeout(() => sendToRenderer('watch:changed', dir), 120)
+    const entry = { watcher: null, timer: null, degraded: false }
+    const attach = (watcher) => {
+      entry.watcher = watcher
+      const ping = () => {
+        clearTimeout(entry.timer)
+        entry.timer = setTimeout(() => sendToRenderer('watch:changed', dir), 120)
+      }
+      watcher.on('add', ping).on('unlink', ping).on('addDir', ping).on('unlinkDir', ping)
+      watcher.on('error', async (error) => {
+        if (!isEnospc(error)) {
+          console.error('watch:start error (ignored):', error?.message || error)
+          return
+        }
+        if (entry.degraded) return
+        entry.degraded = true
+        console.warn(
+          `File watcher limit reached for ${dir} (ENOSPC). ` +
+            'Falling back to shallow watching (depth 2). To watch large workspaces fully, raise the kernel limit: ' +
+            'sudo sysctl fs.inotify.max_user_watches=524288'
+        )
+        clearTimeout(entry.timer)
+        try {
+          await entry.watcher.close()
+        } catch {
+          /* already dead */
+        }
+        try {
+          attach(watchFolder(dir, 2))
+        } catch (rebuildError) {
+          console.error('watch:start rebuild after ENOSPC failed:', rebuildError?.message || rebuildError)
+        }
+      })
     }
-    watcher.on('add', ping).on('unlink', ping).on('addDir', ping).on('unlinkDir', ping)
+    attach(watchFolder(dir, 12))
     folderWatchers.set(dir, entry)
     return true
   })

@@ -124,6 +124,8 @@ const duplicate = async (path) => {
   return true
 }
 
+const MAX_DIR_ENTRIES = 2000
+
 const readTree = async (dir) => {
   let files
   try {
@@ -142,11 +144,13 @@ const readTree = async (dir) => {
     if (a.type !== b.type) return a.type === 'dir' ? -1 : 1
     return a.name.localeCompare(b.name)
   })
-  return nodes
+  // Cap per-directory results so a folder with an extreme number of entries
+  // cannot balloon renderer memory when expanded.
+  return nodes.length > MAX_DIR_ENTRIES ? nodes.slice(0, MAX_DIR_ENTRIES) : nodes
 }
 
 const listFilesFlat = async (root, dir, acc, depth) => {
-  if (depth > 12 || acc.length > 5000) return
+  if (depth > 12 || acc.length >= 5000) return
   let files
   try {
     files = (await Filesystem.readdir({ path: dir, directory: DIR })).files
@@ -157,8 +161,10 @@ const listFilesFlat = async (root, dir, acc, depth) => {
     if (e.name.startsWith('.')) continue
     const full = `${dir}/${e.name}`
     if (e.type === 'directory') await listFilesFlat(root, full, acc, depth + 1)
-    else if (MD_RE.test(e.name))
+    else if (MD_RE.test(e.name)) {
+      if (acc.length >= 5000) return
       acc.push({ name: e.name, path: full, rel: full.slice(root.length + 1) })
+    }
   }
 }
 

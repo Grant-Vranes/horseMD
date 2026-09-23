@@ -4,6 +4,11 @@ import { basename, dirname, extname, join } from 'node:path'
 
 const IGNORED_DIRS = new Set(['.git', 'node_modules', '.DS_Store', '.obsidian', '.horsemd', 'out', 'dist'])
 
+// A single directory with a huge number of entries would otherwise ship every
+// node over IPC and into React state (which renders each expanded row), OOMing
+// the renderer. Cap per-directory results; users can still navigate deeper.
+export const MAX_DIR_ENTRIES = 2000
+
 export async function readDirectoryTree(dir, { showHidden = false, markdownPattern } = {}) {
   let entries
   try {
@@ -28,11 +33,13 @@ export async function readDirectoryTree(dir, { showHidden = false, markdownPatte
     if (a.type !== b.type) return a.type === 'dir' ? -1 : 1
     return a.name.localeCompare(b.name)
   })
-  return nodes
+  // Directories first (alphabetical), then files — the sort above guarantees a
+  // deterministic truncation instead of an arbitrary readdir-order cut.
+  return nodes.length > MAX_DIR_ENTRIES ? nodes.slice(0, MAX_DIR_ENTRIES) : nodes
 }
 
 async function collectMarkdownFiles(root, dir, acc, depth, options) {
-  if (depth > 12 || acc.length > 5000) return
+  if (depth > 12 || acc.length >= 5000) return
   let entries
   try {
     entries = await fs.readdir(dir, { withFileTypes: true })
@@ -47,6 +54,7 @@ async function collectMarkdownFiles(root, dir, acc, depth, options) {
       if (IGNORED_DIRS.has(entry.name)) continue
       await collectMarkdownFiles(root, full, acc, depth + 1, options)
     } else if (options.markdownPattern?.test(entry.name)) {
+      if (acc.length >= 5000) return
       acc.push({
         name: entry.name,
         path: full,
