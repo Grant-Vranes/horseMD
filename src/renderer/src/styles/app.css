@@ -1614,11 +1614,15 @@ body.resizing-pane .pane-left-resizer::before {
 .tabs-scroll {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
-  height: 100%;
+  /* Bordered pill container around the file-name list: groups the tabs
+     visually instead of letting them float loose on the topbar. */
+  height: calc(var(--topbar-h) - 12px);
+  align-self: center;
+  padding: 2px 0;
   flex: 1;
   min-width: 0;
 }
@@ -1654,51 +1658,42 @@ body.resizing-pane .pane-left-resizer::before {
   align-items: center;
   gap: 8px;
   max-width: 180px;
-  height: 30px;
-  padding: 0 12px;
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  height: 24px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 55%, transparent);
+  border-radius: var(--radius-sm);
   color: var(--muted);
   font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
   position: relative;
+  background: color-mix(in srgb, var(--bg-editor) 45%, transparent);
   transition:
     background var(--dur-normal) var(--ease-out),
+    border-color var(--dur-normal) var(--ease-out),
     color var(--dur-normal) var(--ease-out),
+    box-shadow var(--dur-normal) var(--ease-out),
     transform var(--dur-fast) var(--ease-out);
   cursor: pointer;
   user-select: none;
 }
 .tab:hover {
   background: var(--hover);
+  border-color: var(--border);
   color: var(--text);
 }
 .tab.active {
-  background: var(--bg-editor);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-editor));
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border-soft));
   color: var(--text-strong);
-}
-.tab.active::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 8px;
-  right: 8px;
-  height: 2px;
-  background: var(--accent);
-  border-radius: 2px 2px 0 0;
-  box-shadow: 0 0 8px var(--accent-glow);
+  box-shadow: 0 1px 4px var(--accent-glow);
 }
 /* In split view, the non-focused pane's tab stays highlighted (it's open), but
-   its underline is a quiet muted line — no accent, no glow — so the focused
-   pane's tab clearly leads. */
+   styled quieter than the focused pane's accent fill. */
 .tab.active.split-peer {
+  background: color-mix(in srgb, var(--muted) 14%, var(--bg-editor));
+  border-color: var(--border-soft);
   color: var(--text);
-}
-.tab.active.split-peer::after {
-  left: 12px;
-  right: 12px;
-  height: 2px;
-  background: color-mix(in srgb, var(--muted) 45%, transparent);
   box-shadow: none;
 }
 .tab-title {

@@ -426,6 +426,13 @@
       {
         "from": "build/icons/32x32.png",
         "to": "icons/32x32.png"
+      },
+      {
+        "from": "resources/drawio",
+        "to": "drawio",
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "icon": "build/icon.ico",
@@ -523,15 +530,6 @@
       "installerIcon": "build/icon.ico",
       "uninstallerIcon": "build/icon.ico",
       "include": "build/installer.nsh"
-    },
-    "extraResources": [
-      {
-        "from": "resources/drawio",
-        "to": "drawio",
-        "filter": [
-          "**/*"
-        ]
-      }
-    ]
+    }
   }
 }
