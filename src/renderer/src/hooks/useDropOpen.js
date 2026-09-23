@@ -3,31 +3,12 @@ import { useEffect, useState } from 'react'
 const hasExternalFiles = (event) =>
   Array.from(event.dataTransfer?.types || []).includes('Files')
 
-const IMAGE_NAME_RE = /\.(?:avif|bmp|gif|jpe?g|png|svg|webp)$/i
-const isImageFile = (file) => {
-  if (file?.type?.startsWith('image/') || IMAGE_NAME_RE.test(file?.name || '')) return true
-  try {
-    return IMAGE_NAME_RE.test(window.api.getPathForDroppedFile?.(file) || '')
-  } catch {
-    return false
-  }
-}
-
-const hasImageDropInsideEditor = (event) => {
-  if (!event.target?.closest?.('.ProseMirror')) return false
-  const items = [...(event.dataTransfer?.items || [])]
-  const files = [...(event.dataTransfer?.files || [])]
-  return items.some((item) => item.kind === 'file' && item.type.startsWith('image/')) ||
-    files.some(isImageFile)
-}
-
-const droppedNativePaths = (dataTransfer, accept = () => true) => {
+const droppedNativePaths = (dataTransfer) => {
   const resolvePath = window.api.getPathForDroppedFile
   if (!resolvePath) return []
   const paths = []
   const seen = new Set()
   for (const file of [...(dataTransfer?.files || [])]) {
-    if (!accept(file)) continue
     let path = ''
     try {
       path = resolvePath(file)
@@ -41,10 +22,11 @@ const droppedNativePaths = (dataTransfer, accept = () => true) => {
   return paths
 }
 
-// Desktop shell drop-open boundary. External image drops inside ProseMirror
-// stay owned by editor-dom-content.js so they are inserted/persisted rather
-// than opened as tabs. Internal tab/sidebar/outline drags do not carry the
-// native `Files` type and are ignored.
+// Desktop shell drop-open boundary. Dropping external files/folders on the
+// topbar opens them as tabs/workspaces; drops anywhere else are ignored so the
+// editor keeps its own insert behaviors. Internal tab/sidebar/outline drags do
+// not carry the native `Files` type and are ignored. Drops without native
+// paths (e.g. an image dragged from a browser) fall through to the editor.
 export function useDropOpen({ enabled, openPaths, addFolder }) {
   const [active, setActive] = useState(false)
 
@@ -53,6 +35,10 @@ export function useDropOpen({ enabled, openPaths, addFolder }) {
       setActive(false)
       return undefined
     }
+
+    // Cheap per-event checks; all payload inspection happens once, at drop time.
+    const hasExternalFileDrag = (event) => hasExternalFiles(event)
+    const overTopbar = (event) => Boolean(event.target?.closest?.('.topbar'))
 
     const openDroppedPaths = async (paths) => {
       if (!paths.length) return
@@ -65,9 +51,23 @@ export function useDropOpen({ enabled, openPaths, addFolder }) {
       if (files.length) await openPaths(files)
     }
 
+    const onDragEnter = (event) => {
+      if (!hasExternalFileDrag(event)) return
+      // Only the topbar is a drop target; everywhere else shows the
+      // not-allowed cursor and the editor keeps its own drop behavior.
+      if (!overTopbar(event)) {
+        setActive(false)
+        return
+      }
+      // Flip the overlay on immediately, without waiting for the next dragover.
+      event.preventDefault()
+      if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy'
+      setActive(true)
+    }
+
     const onDragOver = (event) => {
-      if (!hasExternalFiles(event)) return
-      if (hasImageDropInsideEditor(event)) {
+      if (!hasExternalFileDrag(event)) return
+      if (!overTopbar(event)) {
         setActive(false)
         return
       }
@@ -77,23 +77,24 @@ export function useDropOpen({ enabled, openPaths, addFolder }) {
     }
 
     const onDragLeave = (event) => {
-      if (!event.relatedTarget) setActive(false)
+      if (!event.relatedTarget) {
+        // Left the window (or entered an iframe): end the visual drag state.
+        setActive(false)
+      }
     }
 
     const onDrop = (event) => {
       if (!hasExternalFiles(event)) return
+      if (!overTopbar(event)) return // Not on the drop target: let other handlers run.
       setActive(false)
-      if (hasImageDropInsideEditor(event)) {
-        // Let the editor insert every image in the payload, while still opening
-        // any accompanying documents/folders instead of silently discarding
-        // them. Synthetic/clipboard Files have no native path and are ignored.
-        const remaining = droppedNativePaths(event.dataTransfer, (file) => !isImageFile(file))
-        void openDroppedPaths(remaining).catch(() => {})
-        return
-      }
+      // Only claim the drop when there are real native paths to open. Synthetic
+      // payloads (e.g. an image dragged from a browser) have no native path;
+      // letting those fall through keeps the editor's insert-image and plain
+      // text drop handlers working.
+      const paths = droppedNativePaths(event.dataTransfer)
+      if (!paths.length) return
       event.preventDefault()
       event.stopPropagation()
-      const paths = droppedNativePaths(event.dataTransfer)
       void openDroppedPaths(paths)
         // The dropped item may disappear or become unreadable after the native
         // drag starts. Treat that like a cancelled drop instead of leaving an
@@ -101,13 +102,13 @@ export function useDropOpen({ enabled, openPaths, addFolder }) {
         .catch(() => {})
     }
 
-    // Capture drop before ProseMirror can consume an unsupported non-image
-    // file. The explicit image exception above leaves its existing target-side
-    // handler untouched.
+    // Capture the drop before ProseMirror can consume an unsupported file.
+    window.addEventListener('dragenter', onDragEnter, true)
     window.addEventListener('dragover', onDragOver, true)
     window.addEventListener('dragleave', onDragLeave, true)
     window.addEventListener('drop', onDrop, true)
     return () => {
+      window.removeEventListener('dragenter', onDragEnter, true)
       window.removeEventListener('dragover', onDragOver, true)
       window.removeEventListener('dragleave', onDragLeave, true)
       window.removeEventListener('drop', onDrop, true)
