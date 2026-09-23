@@ -421,10 +421,14 @@ button:focus-visible,
   gap: 8px;
   pointer-events: none;
   border: 2px dashed color-mix(in srgb, var(--accent) 80%, transparent);
-  background: rgba(0, 0, 0, 0.45);
+  background: color-mix(in srgb, var(--bg-elevated) 88%, var(--accent) 4%);
+  backdrop-filter: blur(2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
   animation: hm-drop-open-in 140ms var(--ease-out);
 }
-.hm-drop-open-overlay strong { font-size: 13px; font-weight: 650; color: var(--text); }
+/* Text sits on a light scrim in light themes and a dark scrim in dark themes,
+   so it must follow the theme instead of being hard-coded. */
+.hm-drop-open-overlay strong { font-size: 13px; font-weight: 650; color: var(--text-strong); }
 .hm-drop-open-overlay > span:last-child { font-size: 12px; color: var(--muted); }
 .hm-drop-open-icon {
   display: grid;
