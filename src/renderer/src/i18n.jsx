@@ -127,6 +127,8 @@ export const STRINGS = {
 
     // tabs
     'tab.new': 'New tab',
+    'topbar.openFiles': 'Open Files',
+    'topbar.noOpenFiles': 'No open files',
     'topbar.newMarkdown': 'New Markdown',
     'topbar.newExcalidraw': 'New Excalidraw Whiteboard',
     'topbar.newDrawio': 'New Drawio Diagram',
@@ -903,6 +905,8 @@ export const STRINGS = {
     'hint.save': '保存',
 
     'tab.new': '新建标签',
+    'topbar.openFiles': '已打开文件',
+    'topbar.noOpenFiles': '没有打开的文件',
     'topbar.newMarkdown': '新建 Markdown',
     'topbar.newExcalidraw': '新建 Excalidraw 白板',
     'topbar.newDrawio': '新建 Drawio 图表',

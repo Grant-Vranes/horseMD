@@ -11,7 +11,7 @@ import { isTabDirty } from '../lib/tab-state.js'
 // unsaved scratch tabs and unknown extensions.
 const tabFileIcon = (tab) => {
   const name = tab.path || tab.title || ''
-  if (isMarkdownName(name)) return 'file-text'
+  if (isMarkdownName(name)) return 'markdown'
   if (isExcalidrawName(name)) return 'whiteboard'
   if (isDrawioName(name)) return 'diagram'
   if (isImageName(name)) return 'image'

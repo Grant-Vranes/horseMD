@@ -218,6 +218,25 @@ export default function App() {
   useEffect(() => {
     if (!home && activeTab?.kind === 'settings') setSidebarOpen(false)
   }, [home, activeTab, setSidebarOpen])
+  // Canvas tabs (.excalidraw/.drawio) auto-collapse the sidebar so the diagram
+  // gets full width; switching back to another tab restores the previous state.
+  // The user can still toggle the sidebar manually while the canvas is open.
+  const canvasSidebarRestoreRef = useRef(null)
+  const activeIsCanvas = !home && !!activeTab && (isExcalidrawTab(activeTab) || isDrawioTab(activeTab))
+  useEffect(() => {
+    if (activeIsCanvas) {
+      if (canvasSidebarRestoreRef.current === null) {
+        canvasSidebarRestoreRef.current = sidebarOpen
+        if (sidebarOpen) setSidebarOpen(false)
+      }
+    } else {
+      if (canvasSidebarRestoreRef.current !== null) {
+        const restore = canvasSidebarRestoreRef.current
+        canvasSidebarRestoreRef.current = null
+        setSidebarOpen(restore)
+      }
+    }
+  }, [activeIsCanvas, sidebarOpen, setSidebarOpen])
   // Split is "live" only when the right-pane tab exists and differs from the
   // active (left) one. Hidden on the welcome/home screen.
   const splitTab = useMemo(

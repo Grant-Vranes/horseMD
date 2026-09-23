@@ -5,6 +5,7 @@ import Tabs from '../Tabs.jsx'
 import { Icon } from '../icons.jsx'
 import ImageHostButton from '../ImageHostButton.jsx'
 import NewFileButton from './NewFileButton.jsx'
+import OpenFilesButton from './OpenFilesButton.jsx'
 import WindowControls from '../WindowControls.jsx'
 import { labelWithShortcut } from '../../lib/commands/shortcut-labels.js'
 
@@ -83,6 +84,13 @@ export default function Topbar({
           <Icon name={readOnly ? 'lock' : 'unlock'} size={18} />
         </button>
       )}
+      <OpenFilesButton
+        tabs={tabs}
+        activeId={activeId}
+        t={t}
+        onActivate={onActivate}
+        onClose={onClose}
+      />
       <NewFileButton
         isMobile={isMobile}
         t={t}
