@@ -27,6 +27,7 @@
 // Everything else — including stale journals, unresolved anchors, serializer
 // failure and semantic mismatch — is a recognized rejection: fail closed,
 // never silently hold.
+import { areSourceSyncNodesSemanticallyEqual } from '../source-transaction-sync.js'
 import { SOURCE_SYNC_OWNERS } from './proof.js'
 import { sourceSyncDigest } from './snapshot.js'
 import { sourceSyncNodeEntryAtPath } from './top-level-subtree.js'
@@ -95,15 +96,21 @@ const snapUpToFenceLine = (markdown, offset) => {
 const changedTopLevelWindow = (oldDoc, newDoc) => {
   const oldCount = oldDoc.childCount
   const newCount = newDoc.childCount
+  // Blocks equal up to serializer-internal list attrs (label / listType /
+  // spread) are UNCHANGED for window purposes: an Enter that splits item 1
+  // of a huge ordered list re-labels every successor item (trace-9817), and
+  // counting those as content changes ballooned the window across fences so
+  // this owner claimed a split it cannot represent - the candidate failed
+  // semantic validation and the user saw a warning.
   let prefix = 0
   while (
     prefix < oldCount && prefix < newCount &&
-    oldDoc.child(prefix).eq(newDoc.child(prefix))
+    areSourceSyncNodesSemanticallyEqual(oldDoc.child(prefix), newDoc.child(prefix))
   ) prefix += 1
   let suffix = 0
   while (
     suffix < oldCount - prefix && suffix < newCount - prefix &&
-    oldDoc.child(oldCount - 1 - suffix).eq(newDoc.child(newCount - 1 - suffix))
+    areSourceSyncNodesSemanticallyEqual(oldDoc.child(oldCount - 1 - suffix), newDoc.child(newCount - 1 - suffix))
   ) suffix += 1
   return {
     prefix,
@@ -199,10 +206,6 @@ export function createCrossFenceSpanTransactionSourceSyncOwner({
     if (currentSource !== snapshot.source || currentCanonical !== snapshot.canonical) {
       return rejected('cross-fence-span-live-snapshot-stale', { reset: true })
     }
-    if (!callbackDocumentEquivalent) {
-      return rejected('cross-fence-span-callback-document-mismatch')
-    }
-
     const window = changedTopLevelWindow(journal.oldDoc, expectedDoc)
     const oldWindow = windowBlocks(journal.oldDoc, window.oldWindowStart, window.oldWindowEnd)
     const newWindow = windowBlocks(expectedDoc, window.newWindowStart, window.newWindowEnd)
@@ -360,7 +363,7 @@ export function createCrossFenceSpanTransactionSourceSyncOwner({
       previousCanonicalDigest: sourceSyncDigest(journal.canonical),
       canonicalDigest: sourceSyncDigest(canonical),
       markdownDigest: sourceSyncDigest(markdown),
-      callbackDocumentEquivalent: true,
+      callbackDocumentEquivalent: callbackDocumentEquivalent === true,
       snapshotMatched: true,
       documentMatched: true
     })

@@ -1,8 +1,118 @@
 # HorseMD AI 接手手册
 
-> 面向全新的 AI / 开发者。先读这篇，再按链接深入。更新时间：2026-09-08。
+> 面向全新的 AI / 开发者。先读这篇，再按链接深入。更新时间：2026-09-19。
 
-## ⚡ 最新状态（2026-09-08，覆盖下方旧快照）
+## 当前检查点：0.13.224 表格清空/再填写已验证（覆盖下方历史）
+
+源码0.13.224，表格修复提交`80e8fef`，版本标签`v0.13.224`指向文档提交`777ae2b`。已完成本机安装；2026-09-19按用户明确要求将GitHub同一版本提升为正式版并设为Latest。标签及15个附件未变，后续仍须现场核验运行PID，不能沿用下方历史记录。
+
+### 2026-09-19 实际交付检查点
+
+- `/Applications/HorseMD.app`已安装0.13.224，新主进程`21331`，argv含`--horsemd-input-trace`。日志`/var/folders/4y/k4t_v1r1745gl5m_h1vwc6j40000gn/T/horsemd-input-trace-21331.jsonl`已产生并顺序解码通过。旧`80436`及三个helper已精确强制退出，旧trace保留；用户配置未清理，安装前后Redis原文件哈希相同。
+- 安装asar与本地新包SHA-256一致：`e8d9c906a42a18305b1cd5a705108d6cc8b9086c5d1ae8c54227cdc4998f033b`；包内0.13.224、表格修复标记及trace参数已核验。旧应用备份位于系统临时目录`horsemd-previous-app-sse7fqso/HorseMD.app`。
+- GitHub正式版已公开：`https://github.com/BND-1/horseMD/releases/tag/v0.13.224`，`draft=false`、`prerelease=false`；已通过`releases/latest`核验Latest为v0.13.224。此前同版本曾为预发布，本次只调整发布状态和文案，15个附件的ID、大小及摘要均未变。原生构建run `35444210508`的Windows、macOS、Ubuntu全部成功；15个附件含各平台包、更新元数据和SHA256SUMS。
+- 本地Windows x64包：`dist/windows-test-0.13.224-x64/HorseMD Setup 0.13.224.exe`，142427160 bytes，SHA-256 `f7ee1d934e1708bb0618b3e7417df67fbf270b1eb8d47e3bb093261e2347ec30`。它是Mac交叉构建并通过归档/PE检查的本地测试包，与GitHub Windows原生构建包是同版本不同构建，不能混用校验值。
+- GitHub Windows原生包：`HorseMD-Setup-0.13.224.exe`，135089268 bytes，SHA-256 `1bc37f24af3071bf9fcb39ca67e2f82d62635ff1c5c91e25313053226a80c3fd`。未进行Windows真机交互验收，仍建议测试副本。
+- 本轮构建、安装和发布核验记录保留在忽略目录`dist/release-0.13.224/`，不是待提交源码；本机DMG通过hdiutil校验，EXE归档通过7-Zip检查，未清理任何历史未跟踪文件。
+
+**first divergence**：0.13.223、PID80436的trace第2867行删除表格“否”；第2871行legacy `localized-change`生成坏候选，第2872–2875行完整性拒绝。表格owner原先只接受前后都非空，删空时退出，通用映射错误扩大重排范围并拼坏后续行。不是Redis卡顿，也不是上轮列表空段落问题。
+
+**修复**：扩展既有`table-cell-plain-text-replace`家族，整条Journal只允许同一个纯文本单元格变化，行列和属性不变。新增`table-cell-empty-transition.js`只修改原始管道槽位文字，保留其他源码字节；全文语义校验与Coordinator不变。
+
+**验证**：旧单测先红；修复后表头/正文及分批/合批跨空状态单测通过。`test:table-cell-empty-replay-ui`只读原trace故障源码，真实IME“否→空→是”、正常回调及立即切源码均零first-divergence，整份源码仅目标字变化，列数、磁盘和fresh-profile冷重开一致。小样本、原表格编辑callback/forced、空单元格规范化、Coordinator、8项调度和39/39保真探针通过。教程`guide:check`、移动端构建及Redis原文副本的退格/源码/磁盘/冷重开也已通过。forced脚本曾读错隐藏编辑器，已固定持有目标DOM后重跑，未放宽断言。
+
+**补齐上轮**：`aec97ac` / 0.13.223已提交并装机，解决源码已与当前PM等价却继续held的问题，双解析和严格列表校验后才推进基线。上一Windows包在`dist/windows-test-0.13.223-x64/`，不含本次表格修复。
+
+**仍未关闭**：全局P0、P7c与Redis约1.9秒整篇同步长任务；不能用局部回归通过代表全局完成。历史未跟踪文件保留，测试只写隔离副本。用户已明确要求正式发布，发布渠道变更不代表上述问题已修复，已知限制继续保留在发布说明。
+
+## 历史检查点：0.13.222 已安装带日志
+
+**用户反馈Redis仍慢后，已用同一全文做trace开/关CPU与长任务剖析；不再将无日志20键中位数作为用户版本流畅的证据。**
+
+- `0fc68c8` / 0.13.221：关闭日志时不再构造事务全文JSON；大文档日志改为不可变节点引用，可精确还原每一步。相同24键带日志新增写入55.5MB→0.487MB，输入p50 68→35ms。
+- `332a32d` / 0.13.222：无评阅文本块跳过逐键全文段落定位；1000段零marker测试doc.resolve 1000→0。带日志全文24键p50 17ms、p95 22ms，42条连续文档快照还原通过。
+
+**并未整体解决：停顿后的整篇同步长任务仍约1932ms。**CPU主因已定位到普通正文legacy同步的批量列表匹配和完整性校验全文解析，不能通过关闭校验、无限延后或要求用户留在源码模式解决。下一工作项优先该长任务预算与正确的局部/重复工作优化，P7c和全局P0也继续保持未关闭。细节及证据目录见 `docs/performance-large-doc.md` 顶部。
+
+本轮已通过日志还原、评阅扫描、评阅卡片真实UI、协调器、8项调度、39/39保真探针、Redis IME/退格/源码/磁盘/冷重开、相邻IME回归及desktop/mobile构建。测试均用隔离副本，原文件未改。旧review UI需先用测试helper启动9222隔离实例，直接执行而无实例的连接失败不是产品回归。
+
+**实际安装**：`/Applications/HorseMD.app` = 0.13.222，当前主进程 **47637**，argv含 `--horsemd-input-trace` 和 `Downloads/redis命令参考与功能文档.md`。新日志 `/var/folders/4y/k4t_v1r1745gl5m_h1vwc6j40000gn/T/horsemd-input-trace-47637.jsonl` 已非空。安装asar与刚打包产物SHA-256一致：`0af4155fef6bcb97964a02303f1b81a1e0df9adbf6b7703a63d9e5b10b1d0705`。旧38670及helpers已精确强制退出，旧日志保留，安装期间原文哈希未变；未推送或发布。
+
+**日志读取变化**：大文档事务事件为 `pm-node-refs-v1`，包含traceId/docNodes/oldDocRef/newDocRef。分析时从当前PID日志开头按顺序用 `createTransactionTraceDecoder()`（`src/renderer/src/components/editor-transaction-trace.js`）还原，再查看first divergence。不得把不同编辑器的事件拼接为同一链；缺字典时报错，不能猜测文档。其它输入/完整性诊断事件未取消。
+
+## 上一安装检查点：0.13.220（历史）
+
+**源码 main = 0.13.220；代码提交仅在本地，未 push、未发布。后续安装已完成：`/Applications/HorseMD.app` 现为刚重新打包的 0.13.220，已带 `--horsemd-input-trace` 和 Redis 文件参数启动，供用户真人测试。全局 P0 未关闭。**
+
+### 当前安装与真人测试入口
+
+用户明确要求：本机 HorseMD 修复通过必要验证、小步提交后，要继续重新打包、安装新版本、带输入日志启动，再交给用户测试，不能停在源码或隔离 E2E。用户说明当前均为测试、没有正式文件，并明确授权本次强制退出旧进程；这一授权不得泛化为删除文件、清空用户配置、操作其它应用或正式生产环境。
+
+本次旧主进程 25389 及其 HorseMD helper 已精确强制退出；新主进程 **38670** 的命令行为 `/Applications/HorseMD.app/Contents/MacOS/HorseMD --horsemd-input-trace /Users/yangtingyi/Downloads/redis命令参考与功能文档.md`。日志实际存在且非空：`/var/folders/4y/k4t_v1r1745gl5m_h1vwc6j40000gn/T/horsemd-input-trace-38670.jsonl`，包含 `input-trace-mounted` 与 ProseMirror 事务事件。旧 PID 日志保留。
+
+构建使用 `CSC_IDENTITY_AUTO_DISCOVERY=false npm run dist:dir -- --publish never`，本机 arm64 应用来自 `dist/mac-arm64/HorseMD.app`。安装版与新打包版的 `app.asar` SHA-256 均为 `5957d1a39ebb9e3533f9cce1245c32fe3049a23128ae8ead87134186490fed25`，并确认包含新同步修复标记；Redis 原文哈希在安装期间未变。安装验证执行记录：`task_408273e47da20a70`、`task_d2d2d0d7a9c728f6`。PID 是本次启动的检查点，下次读日志前需核对实际进程。
+
+- `61176a4` / 0.13.217：取消被即时同步取代的旧定时任务。直接执行生产调度代码的虚拟时钟回归在旧版重现 `B → A` 倒序，修复后通过。
+- `93af63e` / 0.13.218：延迟任务在执行时序列化当前 PM 文档，强制刷新/成功发布取消旧任务，IME 中间态与已处理状态不再重复发布。8 个调度合同通过。
+- `373bb4e` / 0.13.219：嵌套列表正文 helper 遗漏 `callbackDocumentEquivalent` 参数而在 proof 构造时抛 ReferenceError。只补参数传递，true/false 仍只是证据，不重新设置硬门；嵌套插入/连续删除和相邻 owner 合同通过。
+- `eac0a75` / 0.13.220：单次 structural owner publication 作用域复用原 PM→Markdown mapper，最多4项，按源码/PM文档/remark实例隔离，finally 清理，不跨 revision。新增 `test:source-map-scope`。
+
+**取证重点**：实际用户进程 PID 25389 带 `--horsemd-input-trace`；其 trace 第193行尾空项报警 `list-empty-item-tail-previous-row-not-empty` 只是下游。第194行 evidence dump 中更早的 journal-6 已在正文删除 `粉色分 → 粉色` 时出现新候选与旧 canonical 错位并被拒。不要为消除末尾报警而放宽 tail owner。新增 `test:redis-delete-tail-replay-ui` 使用真实 Redis 原文的隔离副本，动态 Enter 建项 + 中文 IME + 4次退格；每步无 integrity/coordinator 拒绝，源码全字节、磁盘与 fresh-profile 冷重开通过。
+
+**原文件保护**：`~/Downloads/redis命令参考与功能文档.md`，508802 bytes / 333584 chars / 13107 lines；接手 SHA-256 为 `2edc209aea4539d8849acac242f1f6e507c93babbf9bd59dcb21eb2a02cf7025`。本轮只读原文，测试只写独立临时副本。历史34条 untracked 清单未清理。
+
+**性能证据**：全文映射微基准8次请求，parse 8→1，单次测量1389→166ms；它使用完整 Redis Markdown + 两块 PM 目标模型，不是完整编辑器帧耗时。无 trace 的20键输入测试 p50 单次对照37→33ms；不可把该结果当作已消除长期卡顿。原位置映射13组、源码保真测试、39/39 probes、desktop/mobile build均通过。
+
+**仍未完成**：P7c fallback owner 未实施。`test:redis-tight-backspace-replay-ui` 在本轮扩展回归仍打印 bs1/bs2/bs3 内部 integrity 拒绝，虽最终磁盘正确且无 toast、脚本 exit 0，仍不满足 first-divergence 为零；不能写成严格验收通过。继续区分 recognized fail-closed 与后续恢复，不隐藏错误。下一步首先固定该链的首个 held 拒绝为严格失败测试，再补证明或 bounded fallback；实际应用换包后仍需真人长会话验证。本轮没有重新验证旧清单中所有既有失败。
+
+## 历史快照（2026-09-14 深夜，0.13.216）
+
+**状态：P6e→P7h 九连修完成，0.13.216 已装机带日志运行（用户验收循环中）。**
+用户在 redis 大文档（已规范化，备份 `Downloads/redis命令参考与功能文档.backup-20260913.md`）上
+持续真实编辑触发警告/卡顿，每轮 = 读 trace → 根因层修复（无补丁）→ E2E 重放 → 装机带
+`--horsemd-input-trace` 交还用户。账本条目 P6e/P6e(2)/P7b/P7b(2)/P7b(3)/P7d/P7e/P7f/P7g/P7h
+全部"已完成"，细节以账本为准（`docs/source-rich-consistency-completion-plan.md`）。
+
+## 版本轨迹（本会话，全部已推送 main，**0.13.206–0.13.216 均未发版**，上一发布 v0.13.205）
+
+- 0.13.208 P6e：空项填充 focused owner `list-empty-item-text-filled`
+- 0.13.209 P6e(2)：删 fill owner 的 callbackDocumentEquivalent 错层硬门（+mermaid StreamLanguage spec 修复 dfb5f3a）
+- 0.13.210 P7b：transition 通道内联文本化（`semanticJson` 的 `inlineTextual`，仅 transition 用）+ `diverged-visible-delete` 边界镜像（affinity 按 canonical 是否跨行）+ `empty-paragraph-before-fence-removed` 尾空段许可
+- 0.13.211 P7b(2)：**36 个 owner 统一删除该硬门**（proof 字段改记真值；22 套合同负例翻转为正例）
+- 0.13.211+（9a6d644）：trace 瘦身——markdown-sync 只在 preserve **失败**时携带全字节
+- P7d（cce3bc8）：redis 文档一次性格式规范化（分歧债 295 处清零；3 个非 ASCII URL 链接用唯一上下文锚点恢复；备份在 Downloads）
+- 0.13.212 P7b(3)：`removeAuthoredTailRow` 邻接证明放宽（间隔属前项即认：空行+缩进续行）+ 规范化文件去除独立 `<br />` 行（facade 系统不变量）+ `transaction-list-subtree` 尾空段许可
+- 0.13.213 P7e：打字延迟三层——**自适应打字让路调度**（markdownUpdated 包装：>150ms 且活跃编辑 → 600ms 空闲尾沿、5s 硬顶、md>100K 冷启动播种；journal 按 revision 积累、forced-flush 即时）+ review 装饰组键按父 memoize + 无 CriticMarkup 起始符跳过扫描；实测 p50 90-117ms→31-36ms
+- 0.13.214 P7f：cross-fence 窗口改用 `areSourceSyncNodesSemanticallyEqual`（label-only relabel 不再膨胀窗口）
+- 0.13.215 P7g + 0.13.216 P7h：**CommonMark 相邻同类列表合并语义**进入空项家族行数证明——共享 helper `mergedAdjacentSameKindListCounts`（top-level-subtree.js），四个 owner 全修：fill/remove 合并计数+索引偏移；tail 有**后**相邻同类列表时普通拒绝（让位 interior）；first-lift 有**前**相邻同类列表时普通拒绝；tail 用 `classification.listPath`（blockquote 变体）
+
+## 常驻测试（每轮修改后跑相关子集）
+
+- `test:list-empty-item-text-fill-transaction-owner`（16 合同含 4b 相邻合并）/ 其余三个空项 owner 合同
+- `test:transition-inline-textual`（7 合同）/ `test:cross-fence-span-transaction-owner`（12）
+- 事故重放 E2E：`test:redis-line1-replay-ui`、`test:redis-joinbackward-replay-ui`、`test:redis-tight-backspace-replay-ui`、`test:ordered-relabel-enter-replay-ui`、`test:adjacent-list-merge-fill-replay-ui`（含 21168 尾段）、`test:ime-loose-item-split-ui`
+- `test:redis-typing-latency-ui`（**无 trace** 运行，p50 ≤45ms 门禁）/ `test:markdown-preservation` / `test:review` / goal-matrix（45 检查点，B6=松散项 IME 分裂+填充）
+- 既有失败（干净树复现，非本会话回归）：`test:source-transaction-sync`（blockquote-list transient 断言）、`test:list-subtree-transaction-owner`、`test-empty-code-block-backspace-transaction-owner`（index.js 缺导出，draft owner 未接线）
+
+## 未做（P7c，下会话候选）
+
+1. **兜底 owner**（用户批准的三层边界：内容错→报警拦住；风格归一→非阻塞提示可见；正常→无感；候选仍过全部 semantic/list-slot 校验）——具体工单 = 重放中的 held 候选（字节正确但证明不足、后续发布兜住、用户无感）
+2. 打字让路调度微调 + 空闲管线成本（`pmPosToMarkdownOffset` 每次调用重建全文 mapper——可按 run memoize）
+3. 发版：0.13.206–0.13.216 累积（托盘 #129 + #126 性能 + 滚动漂移 + 本会话九连修）
+
+## 操作要点（本会话踩坑沉淀）
+
+- 用户报"触发了"→ 读 `$(getconf DARWIN_USER_TEMP_DIR)/horsemd-input-trace-<pid>.jsonl`；失败事件 `markdown-sync-integrity` 只在 preserve 失败时带字节；owner 路径失败看 evidence dump 的 owners 尾（带 reason/recognized）
+- 装机流程：`CSC_IDENTITY_AUTO_DISCOVERY=false npm run dist:dir` → 杀全部旧进程（**孤儿进程会让单实例转发到旧版本，用户测的窗口可能根本不是新代码**——本轮真实事故）→ `rm -rf /Applications/HorseMD.app && cp -R dist/mac-arm64/HorseMD.app /Applications/` → `nohup .../MacOS/HorseMD --horsemd-input-trace &`
+- CDP 测量用 `--remote-debugging-port=24999`；trivial evaluate 挂起多半撞上空闲管线窗口（重读即可），勿误判 renderer 挂死
+- trace 的 timestamp 不可靠（CDP 字段错位），阶段对齐用接收时刻
+- E2E 测延迟必须**不带 trace**（插桩 ~40ms/键）
+- 修一个 owner 触发的形状时，先 grep 全家族同款证明模式（P7h 教训：同状态会依次打爆每个 owner）
+- 深夜连续触发的"又一族"先看是不是同一语义状态的下一实例
+
+---
+
+## 上一状态（2026-09-08）
 
 **先读 [`handoff-0-13-201-session.md`](./handoff-0-13-201-session.md)** —— 它是
 0.13.188 → 0.13.201 的完整会话存档（源码一致性收尾 P5d-P7、启动性能 P8/P8b、
