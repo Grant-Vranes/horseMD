@@ -1685,6 +1685,13 @@ body.resizing-pane .pane-left-resizer::before {
   color: var(--text);
   box-shadow: none;
 }
+.tab-icon {
+  flex-shrink: 0;
+  color: var(--faint);
+}
+.tab.active .tab-icon {
+  color: var(--accent);
+}
 .tab-title {
   overflow: hidden;
   text-overflow: ellipsis;

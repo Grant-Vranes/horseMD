@@ -1,11 +1,24 @@
 import { useEffect, useRef, useState } from 'react'
 import { Icon } from './icons.jsx'
 import { useI18n } from '../i18n.jsx'
-import { isMarkdownName, isExcalidrawName, isDrawioName, isExcalidrawTab, isDrawioTab } from '../paths.js'
+import { isMarkdownName, isExcalidrawName, isDrawioName, isExcalidrawTab, isDrawioTab, isCodeName, isImageName, isPdfName } from '../paths.js'
 import { copyToClipboard } from '../ui.js'
 import { labelWithShortcut } from '../lib/commands/shortcut-labels.js'
 import ExportContextSubmenu from './ExportContextSubmenu.jsx'
 import { isTabDirty } from '../lib/tab-state.js'
+
+// File-type icon for a tab title. Falls back to a plain file glyph for
+// unsaved scratch tabs and unknown extensions.
+const tabFileIcon = (tab) => {
+  const name = tab.path || tab.title || ''
+  if (isMarkdownName(name)) return 'file-text'
+  if (isExcalidrawName(name)) return 'whiteboard'
+  if (isDrawioName(name)) return 'diagram'
+  if (isImageName(name)) return 'image'
+  if (isPdfName(name)) return 'file'
+  if (isCodeName(name)) return 'code'
+  return 'file'
+}
 
 export default function Tabs({
   tabs,
@@ -172,6 +185,7 @@ export default function Tabs({
               }}
               title={tab.path || tab.title}
             >
+              <Icon className="tab-icon" name={tabFileIcon(tab)} size={13} />
               <span className="tab-title">{tab.title}</span>
               <span
                 className={`tab-close${dirty ? ' dirty' : ''}`}
