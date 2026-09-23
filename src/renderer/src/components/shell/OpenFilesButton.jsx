@@ -6,18 +6,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Icon } from '../icons.jsx'
 import { isTabDirty } from '../../lib/tab-state.js'
-import { isMarkdownName, isExcalidrawName, isDrawioName, isImageName, isPdfName, isCodeName } from '../../paths.js'
-
-const tabFileIcon = (tab) => {
-  const name = tab.path || tab.title || ''
-  if (isMarkdownName(name)) return 'file-text'
-  if (isExcalidrawName(name)) return 'whiteboard'
-  if (isDrawioName(name)) return 'diagram'
-  if (isImageName(name)) return 'image'
-  if (isPdfName(name)) return 'file'
-  if (isCodeName(name)) return 'code'
-  return 'file'
-}
+import { tabFileIcon } from '../../lib/file-type-icon.js'
 
 export default function OpenFilesButton({ tabs, activeId, t, onActivate, onClose }) {
   const [open, setOpen] = useState(false)
