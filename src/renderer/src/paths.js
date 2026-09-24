@@ -99,13 +99,27 @@ export const isExcalidrawName = (name) => EXCALIDRAW_RE.test(name || '')
 export const DRAWIO_RE = /\.drawio$/i
 export const isDrawioName = (name) => DRAWIO_RE.test(name || '')
 
+// HTML documents open rendered (sandboxed iframe) with a source-mode toggle
+// to the CodeMirror editor. They are NOT plain-text docs and NOT code docs.
+export const HTML_DOC_RE = /\.(html|htm)$/i
+export const isHtmlName = (name) => HTML_DOC_RE.test(name || '')
+export const isHtmlTab = (tab) =>
+  !!(tab && (tab.fileType === 'html' || isHtmlName(tab.path)))
+export const isHtmlDoc = (tab) => isHtmlTab(tab)
+
+// Large HTML files open directly in source mode; rendering multi-megabyte
+// documents into an iframe is not a useful default.
+export const HTML_RENDER_MAX_BYTES = 2 * 1024 * 1024
+export const shouldAutoRenderHtml = (content) =>
+  typeof content === 'string' && content.length <= HTML_RENDER_MAX_BYTES
+
 // Source-code / config files open in the CodeMirror-based code editor (syntax
 // highlighting + line numbers). Keep this list in sync with the main
 // process's FILE_EXTS (src/main/index.js) so the file tree shows these files.
 export const CODE_EXTS = [
   'java', 'py', 'pyw', 'yml', 'yaml', 'xml', 'json', 'jsonc', 'json5',
   'js', 'mjs', 'cjs', 'jsx', 'ts', 'mts', 'cts', 'tsx',
-  'css', 'scss', 'sass', 'less', 'html', 'htm', 'vue', 'svelte',
+  'css', 'scss', 'sass', 'less', 'vue', 'svelte',
   'c', 'h', 'cpp', 'cc', 'cxx', 'hpp', 'hh', 'cs', 'go', 'rs', 'rb', 'php',
   'swift', 'kt', 'kts', 'scala', 'dart', 'lua', 'pl', 'pm', 'r', 'jl',
   'sh', 'bash', 'zsh', 'fish', 'bat', 'cmd', 'ps1',
@@ -148,6 +162,7 @@ export const tabSaveExt = (tab) =>
 export const isPlainTextDoc = (tab) =>
   !!(tab && tab.path && !MD_DOC_RE.test(tab.path) && !EXCALIDRAW_RE.test(tab.path) &&
     !DRAWIO_RE.test(tab.path) && !IMAGE_RE.test(tab.path) && !PDF_RE.test(tab.path) &&
+    !HTML_DOC_RE.test(tab.path) &&
     !isCodeDoc(tab))
 
 // A valid single path-segment name: no separators / reserved chars, not "."/"..".

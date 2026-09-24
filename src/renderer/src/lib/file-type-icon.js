@@ -7,6 +7,7 @@ import {
   isDrawioName,
   isImageName,
   isPdfName,
+  isHtmlName,
   isCodeName
 } from '../paths.js'
 
@@ -17,6 +18,7 @@ export const tabFileIcon = (tab) => {
   if (isDrawioName(name)) return 'diagram'
   if (isImageName(name)) return 'image'
   if (isPdfName(name)) return 'file'
+  if (isHtmlName(name)) return 'html'
   if (isCodeName(name)) return 'code'
   return 'file'
 }
