@@ -1060,6 +1060,8 @@ export default function App() {
     activeId,
     setHome,
     isMobile,
+    sidebarOpen,
+    sidebarMode,
     setSidebarOpen,
     setSidebarMode,
     setPaletteOpen,

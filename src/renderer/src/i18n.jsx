@@ -751,6 +751,7 @@ export const STRINGS = {
     'tab.close': 'Close',
     'tab.closeOthers': 'Close Others',
     'tab.noPath': 'Unsaved file — save it first',
+    'tab.tip.modified': 'Last modified: ',
 
     // excalidraw whiteboard
     'excalidraw.corruptNote': 'File is not a valid Excalidraw scene — showing a blank canvas',
@@ -1519,6 +1520,7 @@ export const STRINGS = {
     'tab.close': '关闭',
     'tab.closeOthers': '关闭其他',
     'tab.noPath': '未保存的文件，请先保存',
+    'tab.tip.modified': '上次修改：',
 
     // excalidraw whiteboard
     'excalidraw.corruptNote': '文件内容不是有效的 Excalidraw 场景，已显示为空白画布',

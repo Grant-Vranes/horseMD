@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Icon } from './icons.jsx'
 import { useI18n } from '../i18n.jsx'
 import { isMarkdownName, isExcalidrawName, isDrawioName, isExcalidrawTab, isDrawioTab } from '../paths.js'
@@ -47,6 +48,28 @@ export default function Tabs({
   // while the pointer happened to sit on a tab pill. canScroll also gates the
   // edge fades; fadeLeft/fadeRight show when content is hidden beyond each edge.
   const [canScroll, setCanScroll] = useState(false)
+  // Hover tooltip (desktop only): after a short delay over a tab, show the full
+  // file name, path, and last-modified time in a rich card instead of the
+  // native `title` string. tip = { tab, rect } while visible.
+  const [tip, setTip] = useState(null)
+  const tipTimerRef = useRef(null)
+  const clearTipTimer = () => {
+    if (tipTimerRef.current) {
+      clearTimeout(tipTimerRef.current)
+      tipTimerRef.current = null
+    }
+  }
+  useEffect(() => clearTipTimer, [])
+  const showTip = (tab, el) => {
+    clearTipTimer()
+    tipTimerRef.current = setTimeout(() => {
+      setTip({ tab, rect: el.getBoundingClientRect() })
+    }, 150)
+  }
+  const hideTip = () => {
+    clearTipTimer()
+    setTip(null)
+  }
   const [fadeLeft, setFadeLeft] = useState(false)
   const [fadeRight, setFadeRight] = useState(false)
 
@@ -160,7 +183,7 @@ export default function Tabs({
                 setDragOverIndex(-1)
               }}
               onDragEnd={() => { dragIndexRef.current = null; setDragOverIndex(-1) }}
-              onClick={() => onActivate(tab.id)}
+              onClick={() => { hideTip(); onActivate(tab.id) }}
               onContextMenu={(e) => {
                 e.preventDefault()
                 setMenu({ x: e.clientX, y: e.clientY, tab })
@@ -171,7 +194,8 @@ export default function Tabs({
                   onClose(tab.id)
                 }
               }}
-              title={tab.path || tab.title}
+              onMouseEnter={(e) => { if (!isMobile) showTip(tab, e.currentTarget) }}
+              onMouseLeave={hideTip}
             >
               <Icon className="tab-icon" name={tabFileIcon(tab)} size={13} />
               <span className="tab-title">{tab.title}</span>
@@ -200,6 +224,28 @@ export default function Tabs({
       <button className="tab-new" title={labelWithShortcut(t('tab.new'), 'file.new', effectiveKeybindings)} onClick={onNew}>
         <Icon name="plus" size={16} />
       </button>
+
+      {tip && !isMobile && (() => {
+        const rect = tip.rect
+        // Centered under the hovered tab, clamped so the card stays on screen.
+        const width = 340
+        const left = Math.max(8, Math.min(rect.left + rect.width / 2, window.innerWidth - width / 2 - 8))
+        const top = Math.min(rect.bottom + 8, window.innerHeight - 90)
+        const { tab } = tip
+        return createPortal(
+          <div className="tab-tip" role="tooltip" style={{ left, top, width }}>
+            <div className="tab-tip-name">{tab.title}</div>
+            <div className="tab-tip-path">{tab.path || t('tab.noPath')}</div>
+            {tab.mtimeMs != null && (
+              <div className="tab-tip-time">
+                {t('tab.tip.modified')}
+                {new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(tab.mtimeMs))}
+              </div>
+            )}
+          </div>,
+            document.body
+          )
+      })()}
 
       {menu && (
         <>

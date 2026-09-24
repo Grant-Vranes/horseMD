@@ -580,7 +580,7 @@ button:focus-visible,
 .open-files-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 13px;
   width: 100%;
   height: 24px;
   padding: 0 6px 0 10px;
@@ -607,7 +607,7 @@ button:focus-visible,
   padding: 0;
   line-height: 1;
   position: relative;
-  top: -1px;
+  top: -2.5px;
 }
 .open-files-item.active .open-files-item-title {
   font-weight: 600;
@@ -1792,6 +1792,45 @@ body.resizing-pane .pane-left-resizer::before {
   flex-shrink: 0;
   opacity: 0;
   transition: opacity 0.15s var(--ease-out), background 0.15s var(--ease-out), color 0.15s var(--ease-out);
+}
+
+/* Hover tooltip card for tabs: full name, path, and last-modified time.
+   Portaled to document.body so it escapes the strip's overflow clipping;
+   drawn below the topbar; pointer-events: none keeps hover stable. */
+.tab-tip {
+  position: fixed;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+  -webkit-app-region: no-drag;
+  z-index: 1000;
+  animation: tab-tip-in 0.12s var(--ease-out);
+}
+@keyframes tab-tip-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.tab-tip-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tab-tip-path {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--muted);
+  word-break: break-all;
+}
+.tab-tip-time {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--faint);
 }
 .tab:hover .tab-close { opacity: 1; }
 .tab-close.dirty { opacity: 1; }

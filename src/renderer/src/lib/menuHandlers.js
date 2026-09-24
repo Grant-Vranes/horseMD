@@ -89,6 +89,8 @@ export function createMenuHandlers({
   activeId,
   setHome,
   isMobile,
+  sidebarOpen,
+  sidebarMode,
   setSidebarOpen,
   setSidebarMode,
   setPaletteOpen,
@@ -172,14 +174,26 @@ export function createMenuHandlers({
     palette: () => setPaletteOpen((v) => !v),
     toggleSidebar: () => setSidebarOpen((v) => !v),
     toggleOutline: () => {
+      if (sidebarOpen && sidebarMode === 'outline') {
+        setSidebarOpen(false)
+        return
+      }
       setSidebarMode('outline')
       setSidebarOpen(true)
     },
     toggleFiles: () => {
+      if (sidebarOpen && sidebarMode === 'files') {
+        setSidebarOpen(false)
+        return
+      }
       setSidebarMode('files')
       setSidebarOpen(true)
     },
     globalSearch: () => {
+      if (sidebarOpen && sidebarMode === 'search') {
+        setSidebarOpen(false)
+        return
+      }
       setSidebarMode('search')
       setSidebarOpen(true)
     },
