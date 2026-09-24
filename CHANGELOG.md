@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.13.240] - 2026-09-24
+
+### Changed
+- **标签悬浮提示延迟恢复为 450ms**，避免误触发。
+
 ## [0.13.239] - 2026-09-24
 
 ### Changed

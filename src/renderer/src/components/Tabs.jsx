@@ -64,7 +64,7 @@ export default function Tabs({
     clearTipTimer()
     tipTimerRef.current = setTimeout(() => {
       setTip({ tab, rect: el.getBoundingClientRect() })
-    }, 150)
+    }, 450)
   }
   const hideTip = () => {
     clearTipTimer()
