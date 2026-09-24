@@ -4,7 +4,7 @@
 // page. sandbox without allow-same-origin keeps the frame in an opaque origin:
 // its scripts cannot reach window.api, localStorage, or the parent window.
 // Render mode always reflects the file on disk; App saves before toggling here.
-import { buildHtmlFrameUrl } from './editor-html.js'
+import { buildHtmlFrameUrl } from './editor-html-view.js'
 
 export default function HtmlEditor({ tab, renderNonce }) {
   const src = buildHtmlFrameUrl(tab)
