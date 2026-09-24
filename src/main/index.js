@@ -514,7 +514,10 @@ function registerDrawioProtocol() {
 // <abs-path> for renderer pages that cannot load file:// URLs (http dev server
 // origin). Only image/PDF extensions are served; anything else is 403 so the
 // scheme cannot become a generic file-read channel.
-const MEDIA_EXT_RE = /\.(png|jpe?g|gif|webp|svg|bmp|avif|ico|pdf)$/i
+// .html/.htm are served so dev-mode (http: renderer origin) can embed local
+// HTML documents in a sandboxed iframe; packaged builds load file:// directly.
+// Deliberate local-file read channel limited to media + html documents.
+const MEDIA_EXT_RE = /\.(png|jpe?g|gif|webp|svg|bmp|avif|ico|pdf|html?)$/i
 function registerLocalMediaProtocol() {
   protocol.handle('local-media', async (request) => {
     let url
