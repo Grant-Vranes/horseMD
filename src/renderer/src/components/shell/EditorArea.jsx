@@ -15,7 +15,7 @@
 // chunked-load flow take over exactly as before.
 import { Suspense, lazy, useRef } from 'react'
 import { Icon } from '../icons.jsx'
-import { isDrawioName, isExcalidrawName, isDrawioTab, isExcalidrawTab, isCodeDoc, isMediaDoc, isPdfName, isPlainTextDoc, shouldUseRichContentVisibility } from '../../paths.js'
+import { isDrawioName, isExcalidrawName, isDrawioTab, isExcalidrawTab, isCodeDoc, isMediaDoc, isPdfName, isPlainTextDoc, isHtmlTab, shouldAutoRenderHtml, shouldUseRichContentVisibility } from '../../paths.js'
 import { attachSourceCaret } from '../editor-source-caret.js'
 import { updateTextareaSourceFromDom } from '../../source-text-fidelity.js'
 
@@ -28,6 +28,7 @@ const DrawioEditor = lazy(() => import('../DrawioEditor.jsx'))
 const PdfViewer = lazy(() => import('../PdfViewer.jsx'))
 const MediaViewer = lazy(() => import('../MediaViewer.jsx'))
 const CodeEditor = lazy(() => import('../CodeEditor.jsx'))
+const HtmlEditor = lazy(() => import('../HtmlEditor.jsx'))
 
 const editorChunkFallback = (
   <div className="editor-skeleton" aria-hidden="true">
@@ -89,11 +90,15 @@ export default function EditorArea({
   onRichPaneFocus,
   onCloseSourceRichSplit,
   onToggleSourceRichSplit,
+  onToggleHtmlSource,
+  htmlRenderNonce,
   updateContent,
   onRequestSave,
   markRichEditPending,
-  t
+  t,
 }) {
+  // Mobile renderer shares this component; HTML iframe preview is desktop-only.
+  const isMobile = window.api?.platform === 'ios' || window.api?.platform === 'android'
   // One-shot restore of the persisted caret/viewport per tab (issue #111). The
   // Set survives reloads (keyed by tab.id) so an external-edit reload that
   // remounts the editor does not re-apply a stale offset onto new content.
@@ -127,7 +132,10 @@ export default function EditorArea({
         // Code files (.java/.py/.yml/…) get the CodeMirror editor; everything
         // else that isn't Markdown/canvas/media keeps the fast textarea.
         const codeDoc = isCodeDoc(tab)
-        const plainText = isPlainTextDoc(tab) && !codeDoc
+        const htmlDoc = isHtmlTab(tab)
+        const htmlRenderEligible = htmlDoc && shouldAutoRenderHtml(tab.content || '')
+        const htmlShowSource = !htmlRenderEligible || tab.htmlSource === true
+        const plainText = isPlainTextDoc(tab) && !codeDoc && !htmlDoc
         const excalidrawDoc = isExcalidrawTab(tab)
         const drawioDoc = isDrawioTab(tab)
         const mediaDoc = isMediaDoc(tab)
@@ -135,7 +143,7 @@ export default function EditorArea({
         const drawioEnabled = window.api?.capabilities?.drawio === true
         const shouldMountExcalidraw = excalidrawDoc && (inView || mountedIds.has(tab.id))
         const excalidrawEnabled = window.api?.capabilities?.excalidraw === true
-        const isSourceRichSplit = sourceRichSplitMode && isLeft && !plainText && !heavyAsSource && !excalidrawDoc && !drawioDoc && !mediaDoc && !codeDoc
+        const isSourceRichSplit = sourceRichSplitMode && isLeft && !plainText && !heavyAsSource && !excalidrawDoc && !drawioDoc && !mediaDoc && !codeDoc && !htmlDoc
         const onPaneFocus = (pane = null) => {
           focusedTabRef.current = tab.id
           if (split) setFocusedPane(isRight ? 'right' : 'left')
@@ -157,13 +165,13 @@ export default function EditorArea({
         // In global source mode the active Markdown pane shows a textarea too,
         // but its already-mounted Crepe editor stays mounted underneath. That
         // avoids a full re-parse/image reload when switching back to rich.
-        const sourceForActiveRich = (sourceMode || isSourceRichSplit) && isLeft && !plainText && !heavyAsSource && !excalidrawDoc && !drawioDoc && !mediaDoc && !codeDoc
+        const sourceForActiveRich = (sourceMode || isSourceRichSplit) && isLeft && !plainText && !heavyAsSource && !excalidrawDoc && !drawioDoc && !mediaDoc && !codeDoc && !htmlDoc
         const usesTextarea = plainText || heavyAsSource || sourceForActiveRich
         // content-visibility virtualization (see .hm-cv in app.css) is reserved
         // for genuinely huge RICH documents. Medium CJK-heavy docs have enough
         // text to be expensive on Windows, but too few blocks for CV to pay for
         // its estimate-to-real height churn; they use layout containment instead.
-        const richEligible = !plainText && !heavyAsSource && !excalidrawDoc && !drawioDoc && !mediaDoc && !codeDoc
+        const richEligible = !plainText && !heavyAsSource && !excalidrawDoc && !drawioDoc && !mediaDoc && !codeDoc && !htmlDoc
         const largeRich = richEligible && shouldUseRichContentVisibility(tab.content || '')
         const nodes = []
 
@@ -272,6 +280,58 @@ export default function EditorArea({
                   onRequestSave={() => onRequestSave?.(tab.id)}
                 />
               </Suspense>
+            </div>
+          )
+        }
+
+        const shouldMountHtml = htmlDoc && (inView || mountedIds.has(tab.id))
+        if (shouldMountHtml) {
+          const setHtmlHost = (el) => {
+            if (el) {
+              editorHosts.current[tab.id] = el
+              if (isLeft) editorHostRef.current = el
+              return
+            }
+            const existing = editorHosts.current[tab.id]
+            delete editorHosts.current[tab.id]
+            if (isLeft && (!existing || editorHostRef.current === existing)) editorHostRef.current = null
+          }
+          nodes.push(
+            <div
+              key={`html:${tab.id}:${tab.reloadNonce}`}
+              className={`editor-scroll html-scroll${paneClass}`}
+              ref={setHtmlHost}
+              style={{ display: inView ? undefined : 'none', order, flex: paneFlex, position: 'relative' }}
+              onFocusCapture={() => onPaneFocus('rich')}
+              onMouseDownCapture={() => onPaneFocus('rich')}
+            >
+              {!isMobile && (
+                <button
+                  type="button"
+                  className="icon-btn html-mode-toggle"
+                  title={t('html.toggleSource')}
+                  onClick={() => onToggleHtmlSource?.(tab.id)}
+                >
+                  {htmlShowSource ? t('html.toggleRenderLabel') : t('html.toggleSourceLabel')}
+                </button>
+              )}
+              {isMobile ? (
+                <div className="excalidraw-mobile-placeholder" role="status">{t('html.mobilePlaceholder')}</div>
+              ) : !htmlShowSource ? (
+                <Suspense fallback={editorChunkFallback}>
+                  <HtmlEditor tab={tab} renderNonce={htmlRenderNonce?.[tab.id] || 0} />
+                </Suspense>
+              ) : (
+                <Suspense fallback={editorChunkFallback}>
+                  <CodeEditor
+                    tab={tab}
+                    readOnly={readOnly}
+                    onChange={(text) => updateContent(tab.id, text)}
+                    registerApi={(api) => registerEditorApi(tab.id, api)}
+                    onRequestSave={() => onRequestSave?.(tab.id)}
+                  />
+                </Suspense>
+              )}
             </div>
           )
         }
