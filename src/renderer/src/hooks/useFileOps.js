@@ -25,8 +25,11 @@ import {
   isHeavyDoc,
   isImageName,
   isPdfName,
+  isHtmlName,
   isMediaDoc
 } from '../paths.js'
+import { loadHtmlViewModes, saveHtmlViewMode } from '../components/editor-html-view.js'
+import { shouldAutoRenderHtml } from '../paths.js'
 import { fireToast } from '../ui.js'
 import { isExcalidrawTab, isDrawioTab, tabSaveExt } from '../paths.js'
 import { EMPTY_EXCALIDRAW_SCENE } from '../lib/excalidraw-scene.js'
@@ -141,6 +144,7 @@ export function useFileOps({
           mtimeMs,
           reloadNonce: 0,
           heavy: isHeavyDoc(content),
+          htmlSource: isHtmlName(path) && (!shouldAutoRenderHtml(content) || loadHtmlViewModes()[norm] === 'source'),
           restoreOffset: positionMatches ? savedPosition.offset : null,
           restoreScrollTop: positionMatches ? savedPosition.scrollTop || null : null
         }

@@ -60,7 +60,8 @@ import { useSystemColorScheme } from './hooks/useSystemColorScheme.js'
 import { useDropOpen } from './hooks/useDropOpen.js'
 import { buildElectronAcceleratorPayload, buildGlobalAcceleratorPayload } from './lib/commands/electron-accelerators.js'
 import { createMenuHandlers, useGlobalKeys, useCommands } from './lib/menuHandlers.js'
-import { isAbsolutePath, isCodeDoc, isPlainTextDoc, isExcalidrawName, isDrawioName, isExcalidrawTab, isDrawioTab, isMediaDoc, loadSession, loadFolderRootsFromSession } from './paths.js'
+import { isAbsolutePath, isCodeDoc, isPlainTextDoc, isExcalidrawName, isDrawioName, isExcalidrawTab, isDrawioTab, isMediaDoc, isHtmlTab, loadSession, loadFolderRootsFromSession } from './paths.js'
+import { saveHtmlViewMode } from './components/editor-html-view.js'
 import { blobToBase64 } from './lib/excalidraw-export.js'
 import { createReviewActions } from './lib/reviewActions.js'
 import { createEditorApiRegistry } from './lib/editor-api-registry.js'
@@ -125,6 +126,9 @@ export default function App() {
   // One document shown as source (left) + rich preview (right). This remains
   // separate from splitId, which represents two different documents.
   const [sourceRichSplitId, setSourceRichSplitId] = useState(null)
+  // Per-tab HTML render remount counters (bumped after save-before-render so
+  // the disk-backed iframe reloads with the just-saved content).
+  const [htmlRenderNonce, setHtmlRenderNonce] = useState({})
   const [sourceRichSplitRatio, setSourceRichSplitRatio] = useState(0.45)
   const [sourceRichFocusedPane, setSourceRichFocusedPane] = useState('source')
   // Which split pane is focused ('left' = active tab, 'right' = split tab). A tab
@@ -816,7 +820,7 @@ export default function App() {
       fireToast(tRef.current('sourceRich.closeDocumentSplit'))
       return
     }
-    if (isMediaDoc(tab) || isPlainTextDoc(tab) || isCodeDoc(tab) || (tab.heavy && !richForced.has(tab.id))) {
+    if (isMediaDoc(tab) || isPlainTextDoc(tab) || isCodeDoc(tab) || isHtmlTab(tab) || (tab.heavy && !richForced.has(tab.id))) {
       fireToast(tRef.current('sourceRich.unavailable'))
       return
     }
@@ -839,6 +843,25 @@ export default function App() {
     setSourceRichSplitId(null)
     setSourceRichFocusedPane('source')
   }, [])
+
+  // HTML tabs: rendered (disk-backed iframe) ↔ CodeMirror source. Toggling to
+  // render commits and saves first — the iframe reads the file from disk.
+  const toggleHtmlSource = useCallback(async (tabId) => {
+    const tab = tabsRef.current.find((item) => item.id === tabId)
+    if (!tab || tab.kind === 'settings') return
+    const next = tab.htmlSource !== true
+    if (!next) {
+      await saveTab(tabId)
+      setHtmlRenderNonce((prev) => ({ ...prev, [tabId]: (prev[tabId] || 0) + 1 }))
+    }
+    setTabs((items) => items.map((item) =>
+      item.id === tabId ? { ...item, htmlSource: next } : item
+    ))
+    tabsRef.current = tabsRef.current.map((item) =>
+      item.id === tabId ? { ...item, htmlSource: next } : item
+    )
+    if (tab.path) saveHtmlViewMode(tab.path, next ? 'source' : 'render')
+  }, [saveTab, setTabs, tabsRef])
 
   // Drag the divider between the two split panes to change their ratio.
   const startSplitDrag = useColDrag({
@@ -886,6 +909,7 @@ export default function App() {
   const outlineSourceMode = !!outlineTab && (
     isPlainTextDoc(outlineTab) ||
     isCodeDoc(outlineTab) ||
+    isHtmlTab(outlineTab) ||
     (outlineTab.heavy && !richForced.has(outlineId)) ||
     ((sourceMode || (sourceRichSplitMode && sourceRichFocusedPane === 'source')) && outlineId === activeId)
   )
@@ -964,7 +988,7 @@ export default function App() {
   const findSourceActive = sourceMode ||
     (sourceRichSplitMode && sourceRichFocusedPane === 'source') ||
     isMediaDoc(activeTab) ||
-    isPlainTextDoc(activeTab) || isCodeDoc(activeTab) || (activeTab?.heavy && !richForced.has(activeTab.id))
+    isPlainTextDoc(activeTab) || isCodeDoc(activeTab) || isHtmlTab(activeTab) || (activeTab?.heavy && !richForced.has(activeTab.id))
   const { find, setFind, findInputRef, replaceInputRef, replaceRef, runFind, stepFind, closeFind, applyReplace, openFind } =
     useFindReplace({
       editorHostRef,
@@ -1385,6 +1409,8 @@ export default function App() {
             onRichPaneFocus={() => setSourceRichFocusedPane('rich')}
             onCloseSourceRichSplit={closeSourceRichSplit}
             onToggleSourceRichSplit={toggleSourceRichSplit}
+            onToggleHtmlSource={toggleHtmlSource}
+            htmlRenderNonce={htmlRenderNonce}
             updateContent={updateContent}
             onRequestSave={saveTab}
             markRichEditPending={markRichEditPending}
