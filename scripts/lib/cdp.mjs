@@ -41,10 +41,12 @@ export async function connectCdp({
     ws.addEventListener('error', reject, { once: true })
   })
 
-  const send = (method, params = {}) => new Promise((resolve, reject) => {
+  const send = (method, params = {}, sessionId) => new Promise((resolve, reject) => {
     const callId = ++id
     pending.set(callId, { resolve, reject })
-    ws.send(JSON.stringify({ id: callId, method, params }))
+    const payload = { id: callId, method, params }
+    if (sessionId) payload.sessionId = sessionId
+    ws.send(JSON.stringify(payload))
   })
   const evaluate = async (expression) => {
     const response = await send('Runtime.evaluate', {

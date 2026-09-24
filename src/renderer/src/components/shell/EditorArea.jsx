@@ -15,7 +15,7 @@
 // chunked-load flow take over exactly as before.
 import { Suspense, lazy, useRef } from 'react'
 import { Icon } from '../icons.jsx'
-import { isDrawioName, isExcalidrawName, isDrawioTab, isExcalidrawTab, isCodeDoc, isMediaDoc, isPdfName, isPlainTextDoc, isHtmlTab, shouldAutoRenderHtml, shouldUseRichContentVisibility } from '../../paths.js'
+import { isDrawioName, isExcalidrawName, isDrawioTab, isExcalidrawTab, isCodeDoc, isMediaDoc, isPdfName, isPlainTextDoc, isHtmlTab, isHugeTextDoc, shouldAutoRenderHtml, shouldUseRichContentVisibility } from '../../paths.js'
 import { attachSourceCaret } from '../editor-source-caret.js'
 import { updateTextareaSourceFromDom } from '../../source-text-fidelity.js'
 
@@ -126,13 +126,20 @@ export default function EditorArea({
         const isFocusedPane = split && ((isRight && focusedPane === 'right') || (isLeft && focusedPane === 'left'))
         const paneClass =
           (isRight ? ' hm-pane-right' : isLeft ? ' hm-pane-left' : '') + (isFocusedPane ? ' hm-focused' : '')
-        // The source/rich split is ONE tab represented by two surfaces. It is
-        // intentionally distinct from `split`, which shows TWO documents.
-        const heavyAsSource = tab.heavy && !richForced.has(tab.id) && !codeDoc
-        // Code files (.java/.py/.yml/…) get the CodeMirror editor; everything
-        // else that isn't Markdown/canvas/media keeps the fast textarea.
         const codeDoc = isCodeDoc(tab)
         const htmlDoc = isHtmlTab(tab)
+        // The source/rich split is ONE tab represented by two surfaces. It is
+        // intentionally distinct from `split`, which shows TWO documents.
+        // (codeDoc must be declared above: heavyAsSource reads it, and a
+        // heavy tab would otherwise hit a TDZ ReferenceError.)
+        const heavyAsSource = tab.heavy && !richForced.has(tab.id) && !codeDoc
+        // Huge text docs (plain-text or heavy-Markdown default view) render in
+        // the virtualized CodeMirror editor, never in a full-content textarea
+        // (see isHugeTextDoc — a 15MB textarea blocks the main thread for
+        // seconds on mount). They never join the source/rich split machinery:
+        // that flow owns the textarea channel and only applies to docs the
+        // user explicitly forced rich.
+        const hugeText = isHugeTextDoc(tab)
         const htmlRenderEligible = htmlDoc && shouldAutoRenderHtml(tab.content || '')
         const htmlShowSource = !htmlRenderEligible || tab.htmlSource === true
         const plainText = isPlainTextDoc(tab) && !codeDoc && !htmlDoc
@@ -166,7 +173,7 @@ export default function EditorArea({
         // but its already-mounted Crepe editor stays mounted underneath. That
         // avoids a full re-parse/image reload when switching back to rich.
         const sourceForActiveRich = (sourceMode || isSourceRichSplit) && isLeft && !plainText && !heavyAsSource && !excalidrawDoc && !drawioDoc && !mediaDoc && !codeDoc && !htmlDoc
-        const usesTextarea = plainText || heavyAsSource || sourceForActiveRich
+        const usesTextarea = (plainText || heavyAsSource || sourceForActiveRich) && !hugeText
         // content-visibility virtualization (see .hm-cv in app.css) is reserved
         // for genuinely huge RICH documents. Medium CJK-heavy docs have enough
         // text to be expensive on Windows, but too few blocks for CV to pay for
@@ -250,7 +257,7 @@ export default function EditorArea({
           )
         }
 
-        const shouldMountCode = codeDoc && (inView || mountedIds.has(tab.id))
+        const shouldMountCode = (codeDoc || ((plainText || heavyAsSource) && hugeText)) && (inView || mountedIds.has(tab.id))
         if (shouldMountCode) {
           const setCodeHost = (el) => {
             if (el) {
@@ -275,6 +282,7 @@ export default function EditorArea({
                 <CodeEditor
                   tab={tab}
                   readOnly={readOnly}
+                  plain={!codeDoc}
                   onChange={(text) => updateContent(tab.id, text)}
                   registerApi={(api) => registerEditorApi(tab.id, api)}
                   onRequestSave={() => onRequestSave?.(tab.id)}
@@ -314,6 +322,9 @@ export default function EditorArea({
                 >
                   {htmlShowSource ? t('html.toggleRenderLabel') : t('html.toggleSourceLabel')}
                 </button>
+              )}
+              {!htmlRenderEligible && !isMobile && (
+                <div className="html-too-large-notice" role="status">{t('html.tooLarge')}</div>
               )}
               {isMobile ? (
                 <div className="excalidraw-mobile-placeholder" role="status">{t('html.mobilePlaceholder')}</div>

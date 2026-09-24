@@ -1,6 +1,6 @@
 {
   "name": "horse",
-  "version": "0.13.240",
+  "version": "0.13.242",
   "description": "HorseMD Markdown Editor",
   "author": "mini_md",
   "license": "MIT",
@@ -25,6 +25,7 @@
     "shortcuts:inventory": "node scripts/export-shortcut-inventory.mjs",
     "test:drawio-file": "node scripts/test-drawio-file.mjs",
     "test:media-viewer-ui": "node scripts/test-media-viewer-ui.mjs",
+    "test:html-render-ui": "node scripts/test-html-render-ui.mjs",
     "test:source-map": "node scripts/test-editor-source-map.mjs",
     "test:source-map-scope": "node scripts/test-editor-source-map-scope.mjs",
     "test:transaction-trace": "node scripts/test-editor-transaction-trace.mjs",

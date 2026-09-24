@@ -7519,3 +7519,15 @@ body.dark .milkdown .ProseMirror .hm-review-card-text {
   right: 14px;
   z-index: 5;
 }
+.html-too-large-notice {
+  position: absolute;
+  top: 10px;
+  left: 14px;
+  z-index: 5;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--hover, rgba(127, 127, 127, 0.15));
+  color: var(--muted, inherit);
+  font-size: 12px;
+  pointer-events: none;
+}

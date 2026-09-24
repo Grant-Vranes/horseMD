@@ -46,12 +46,18 @@ const FILE_RE = new RegExp(`\\.(${FILE_EXTS.join('|')})$`, 'i')
 // targetOrigin checks; supportFetchAPI lets the webapp fetch its own assets.
 protocol.registerSchemesAsPrivileged([
   { scheme: 'drawio-local', privileges: { standard: true, secure: true, supportFetchAPI: true } },
+  // Serves local HTML documents (and their web assets) to the renderer's
+  // sandboxed HTML preview iframe. A sandboxed file: iframe loads nothing
+  // (opaque origin cannot be granted file access), so the preview navigates
+  // to local-html://doc/<abs-path> instead: standard+secure so the frame gets
+  // a real document, while the iframe's sandbox keeps the origin opaque.
   // Serves document-relative images as local-media://<abs-path> when the
   // renderer page is NOT on a file:// origin (dev server, future embedded
   // hosts). Chromium blocks file:// subresources from http(s) origins, so
   // dev-mode pasted images rendered broken (#image-dev-display). Image
   // extensions only, and the renderer only emits this scheme on desktop.
-  { scheme: 'local-media', privileges: { standard: true, secure: true, supportFetchAPI: true } }
+  { scheme: 'local-media', privileges: { standard: true, secure: true, supportFetchAPI: true } },
+  { scheme: 'local-html', privileges: { standard: true, secure: true, supportFetchAPI: true } }
 ])
 
 // Pre-sync default for the global show/hide accelerator. The renderer owns the
@@ -518,6 +524,37 @@ function registerDrawioProtocol() {
 // HTML documents in a sandboxed iframe; packaged builds load file:// directly.
 // Deliberate local-file read channel limited to media + html documents.
 const MEDIA_EXT_RE = /\.(png|jpe?g|gif|webp|svg|bmp|avif|ico|pdf|html?)$/i
+// Web assets the sandboxed HTML preview may load relative to the document
+// (local-html://doc/<abs-path>). Deliberate local-file read channel limited to
+// html documents + static web assets; anything else is 403.
+const HTML_ASSET_EXT_RE = /\.(html?|css|js|mjs|json|txt|csv|png|jpe?g|gif|webp|svg|bmp|avif|ico|woff2?|ttf|otf|eot|mp4|webm|mp3|wav|ogg|pdf)$/i
+function registerLocalHtmlProtocol() {
+  protocol.handle('local-html', async (request) => {
+    let url
+    try {
+      url = new URL(request.url)
+    } catch {
+      return new Response('Bad Request', { status: 400 })
+    }
+    // Standard-scheme URLs are local-html://doc/<abs-path> (fixed host "doc").
+    if (url.host !== 'doc') return new Response('Forbidden', { status: 403 })
+    let filePath
+    try {
+      filePath = decodeURIComponent(url.pathname)
+    } catch {
+      return new Response('Bad Request', { status: 400 })
+    }
+    filePath = normalize(filePath.replace(/^\/(?=[a-zA-Z]:\/)/, ''))
+    if (!HTML_ASSET_EXT_RE.test(filePath)) {
+      return new Response('Forbidden', { status: 403 })
+    }
+    try {
+      return await net.fetch(pathToFileURL(filePath).toString())
+    } catch {
+      return new Response('Not Found', { status: 404 })
+    }
+  })
+}
 function registerLocalMediaProtocol() {
   protocol.handle('local-media', async (request) => {
     let url
@@ -583,6 +620,7 @@ app.whenReady().then(() => {
   )
   registerDrawioProtocol()
   registerLocalMediaProtocol()
+  registerLocalHtmlProtocol()
   createWindow()
 
   // Renderer asks for the packaged editor iframe URL. lang is 'zh' | 'en'

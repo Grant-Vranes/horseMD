@@ -170,6 +170,16 @@ export const isValidName = (name) => !!name && !/[\\/:*?"<>|]/.test(name) && nam
 // Does this fs error mean "a file/folder with that name already exists"?
 export const isExistsError = (e) => /eexist|already exists/i.test(e?.message || '')
 
+// Docs above this size must never render through a full-content <textarea>:
+// Blink lays out the entire value synchronously on mount (a 15MB text file
+// measured ~6.6s of main-thread block with soft wrap, still ~2s with wrap off),
+// which whites out the whole app while opening. Such docs open in the
+// virtualized CodeMirror editor instead — same content/save contracts as code
+// docs (onChange → updateContent, registerApi flushMarkdown for saves).
+export const HUGE_TEXT_LIMIT = 2 * 1024 * 1024
+export const isHugeTextDoc = (tab) =>
+  !!(tab && typeof tab.content === 'string' && tab.content.length > HUGE_TEXT_LIMIT)
+
 // A Markdown doc is "heavy" to render richly when:
 //   ① it has a huge run of non-blank lines (no paragraph breaks) → ProseMirror
 //     near-quadratic freeze;
