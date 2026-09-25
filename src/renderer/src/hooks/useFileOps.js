@@ -156,12 +156,16 @@ export function useFileOps({
         // recents list so the dead link disappears, and show a friendly message
         // instead of the raw IPC error.
         const missing = e?.message?.includes('ENOENT')
+        const binary = e?.message?.includes('ERR_BINARY_FILE')
         setRecents((prev) => prev.filter((r) => (r.path || '').replace(/\\/g, '/') !== norm))
         // Startup restore skips missing files quietly; an explicit open (clicking
         // a Recent, File > Open) still tells the user what happened.
         if (!silent) {
           window.alert(
-            tRef.current(missing ? 'error.fileMissing' : 'error.openFailed', { name: baseName(path) })
+            tRef.current(
+              missing ? 'error.fileMissing' : binary ? 'error.binaryFile' : 'error.openFailed',
+              { name: baseName(path) }
+            )
           )
         }
       }

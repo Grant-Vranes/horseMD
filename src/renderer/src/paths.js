@@ -113,9 +113,11 @@ export const HTML_RENDER_MAX_BYTES = 2 * 1024 * 1024
 export const shouldAutoRenderHtml = (content) =>
   typeof content === 'string' && content.length <= HTML_RENDER_MAX_BYTES
 
-// Source-code / config files open in the CodeMirror-based code editor (syntax
-// highlighting + line numbers). Keep this list in sync with the main
-// process's FILE_EXTS (src/main/index.js) so the file tree shows these files.
+// Source-code / config files known to the code editor get language-aware
+// syntax highlighting via @codemirror/language-data. This list is a hint only:
+// since the open-anywhere policy, ANY file that is not a dedicated type
+// (markdown / excalidraw / drawio / image / pdf / html) opens in the CodeMirror
+// code editor — see isCodeDoc below.
 export const CODE_EXTS = [
   'java', 'py', 'pyw', 'yml', 'yaml', 'xml', 'json', 'jsonc', 'json5',
   'js', 'mjs', 'cjs', 'jsx', 'ts', 'mts', 'cts', 'tsx',
@@ -132,7 +134,15 @@ export const CODE_RE = new RegExp(`\\.(${CODE_EXTS.join('|')})$`, 'i')
 export const CODE_BASENAMES = /^(dockerfile|makefile|gnumakefile|cmakelists\.txt|\.gitignore|\.env.*|\.editorconfig|\.npmrc|\.babelrc)$/i
 export const isCodeName = (name) =>
   !!name && (CODE_RE.test(name) || CODE_BASENAMES.test(name))
-export const isCodeDoc = (tab) => !!(tab && tab.path && isCodeName(tab.path))
+
+// Open-any-file policy: a pathed tab that is not a dedicated editor type opens
+// in the CodeEditor (CodeMirror). Extensions outside CODE_EXTS simply get
+// plain highlighting; binary files never reach a tab (fs:readFile rejects them
+// and the open flow shows a "not supported" alert).
+export const isCodeDoc = (tab) =>
+  !!(tab && tab.path && !isMarkdownName(tab.path) && !isExcalidrawName(tab.path) &&
+    !isDrawioName(tab.path) && !isImageName(tab.path) && !isPdfName(tab.path) &&
+    !isHtmlName(tab.path))
 
 // Read-only media files open in dedicated viewer tabs (Chromium <img> / built-in
 // PDF viewer). Like .excalidraw/.drawio they are NOT plain-text docs (the

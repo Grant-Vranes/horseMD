@@ -18,29 +18,16 @@ import { defaultMenuAcceleratorFor, menuAcceleratorFor, normalizeMenuKeybindingP
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 // Text-document extensions that drive global search classification (MD_RE is
-// passed to registerGlobalSearchIpc); open/tree use the FILE_EXTS superset.
+// passed to registerGlobalSearchIpc).
 const MD_EXTS = ['md', 'markdown', 'mdx', 'txt']
 const MD_RE = new RegExp(`\\.(${MD_EXTS.join('|')})$`, 'i')
-// Openable file types: open-dialog filter, launch args, sidebar tree.
-// Superset of MD_EXTS — .excalidraw/.drawio open in canvas editors,
-// image/pdf extensions open in read-only viewer tabs, and source-code/config
-// extensions open in the code editor (syntax highlighting + line numbers);
-// all of them must stay OUT of global search (registerGlobalSearchIpc keeps
-// MD_RE below). Keep the code list in sync with the renderer's CODE_EXTS
-// (src/renderer/src/paths.js) — the file tree only lists extensions matched here.
-const CODE_EXTS = [
-  'java', 'py', 'pyw', 'yml', 'yaml', 'xml', 'json', 'jsonc', 'json5',
-  'js', 'mjs', 'cjs', 'jsx', 'ts', 'mts', 'cts', 'tsx',
-  'css', 'scss', 'sass', 'less', 'html', 'htm', 'vue', 'svelte',
-  'c', 'h', 'cpp', 'cc', 'cxx', 'hpp', 'hh', 'cs', 'go', 'rs', 'rb', 'php',
-  'swift', 'kt', 'kts', 'scala', 'dart', 'lua', 'pl', 'pm', 'r', 'jl',
-  'sh', 'bash', 'zsh', 'fish', 'bat', 'cmd', 'ps1',
-  'sql', 'graphql', 'gql', 'proto', 'toml', 'ini', 'cfg', 'conf', 'properties',
-  'gradle', 'groovy', 'cmake', 'mk', 'make', 'dockerfile', 'env', 'gitignore',
-  'csv', 'tsv', 'diff', 'patch', 'vim', 'tf', 'hcl', 'nginx', 'sln', 'csproj'
-]
-const FILE_EXTS = [...MD_EXTS, 'excalidraw', 'drawio', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico', 'avif', 'pdf', ...CODE_EXTS]
-const FILE_RE = new RegExp(`\\.(${FILE_EXTS.join('|')})$`, 'i')
+
+// Openable file policy: EVERY file is openable. The file tree lists all files
+// (hidden-file rules still apply), launch args open any existing file, and the
+// open dialog already offers "All Files". Markdown/HTML/canvas/media types get
+// their dedicated editors; everything else opens in the CodeMirror code editor
+// (paths.js isCodeDoc). Binary files (detected by a NUL byte scan in fs:readFile)
+// fail to open with a friendly "not supported" message.
 // diagrams.net editor iframe (see registerDrawioProtocol). standard+secure so
 // the iframe has a real origin ("drawio-local://editor") for postMessage
 // targetOrigin checks; supportFetchAPI lets the webapp fetch its own assets.
@@ -210,7 +197,7 @@ function extractArgs(argv) {
       continue
     }
     if (st.isDirectory()) folders.push(abs)
-    else if (FILE_RE.test(abs)) files.push(abs)
+    else files.push(abs)
   }
   return { files, folders }
 }
@@ -702,11 +689,13 @@ app.on('window-all-closed', () => {
 registerDocumentIpc(ipcMain, {
   getMainWindow: () => mainWindow,
   getUserDataPath: () => app.getPath('userData'),
-  markdownExtensions: FILE_EXTS,
+  markdownExtensions: MD_EXTS,
   isTrustedSender: (event) => !!mainWindow && event.sender.id === mainWindow.webContents.id
 })
 
-registerFileSystemIpc(ipcMain, { shell, markdownPattern: FILE_RE })
+// markdownPattern: null means the tree lists every file — HorseMD can open
+// anything (dedicated editors for docs/media, CodeMirror for the rest).
+registerFileSystemIpc(ipcMain, { shell, markdownPattern: null })
 
 // Workspace-wide content search (issue #120) — deliberately keeps MD_RE so
 // .excalidraw scene JSON is never searched.
@@ -1189,6 +1178,30 @@ ipcMain.handle('window:setGlobalShortcuts', (event, payload) => {
 ipcMain.handle('window:toggleDevTools', (event) => {
   if (!mainWindow || event.sender.id !== mainWindow.webContents.id) return false
   mainWindow.webContents.toggleDevTools()
+  return true
+})
+
+// Right-click "Inspect Element" for areas without a custom context menu.
+// The renderer only calls this when no in-app context menu claimed the event.
+ipcMain.handle('devtools:inspectElement', (event, x, y) => {
+  const wc = event.sender
+  if (wc.getType() !== 'window') return false
+  const ix = Number.isFinite(x) ? Math.round(x) : 0
+  const iy = Number.isFinite(y) ? Math.round(y) : 0
+  wc.inspectElement(ix, iy)
+  return true
+})
+
+// Settings › Developer tools: open DevTools docked to the bottom of the main
+// window so it is always visible (a detached window can hide behind the app).
+ipcMain.handle('devtools:open', (event) => {
+  const wc = event.sender
+  if (wc.getType() !== 'window') return false
+  if (wc.isDevToolsOpened()) {
+    wc.closeDevTools()
+    return false
+  }
+  wc.openDevTools({ mode: 'bottom', activate: true })
   return true
 })
 

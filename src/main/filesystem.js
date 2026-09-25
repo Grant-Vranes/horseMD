@@ -9,6 +9,9 @@ const IGNORED_DIRS = new Set(['.git', 'node_modules', '.DS_Store', '.obsidian', 
 // the renderer. Cap per-directory results; users can still navigate deeper.
 export const MAX_DIR_ENTRIES = 2000
 
+// markdownPattern === null means "list every file" — HorseMD opens any file
+// (dedicated editors for docs/media, CodeMirror for the rest). A pattern may
+// still be passed to restrict the listing (tests / future use).
 export async function readDirectoryTree(dir, { showHidden = false, markdownPattern } = {}) {
   let entries
   try {
@@ -24,7 +27,7 @@ export async function readDirectoryTree(dir, { showHidden = false, markdownPatte
     const full = join(dir, entry.name)
     if (entry.isDirectory()) {
       nodes.push({ name: entry.name, path: full, type: 'dir', children: null })
-    } else if (markdownPattern?.test(entry.name)) {
+    } else if (entry.isFile() && (!markdownPattern || markdownPattern.test(entry.name))) {
       nodes.push({ name: entry.name, path: full, type: 'file' })
     }
   }
@@ -53,7 +56,7 @@ async function collectMarkdownFiles(root, dir, acc, depth, options) {
     if (entry.isDirectory()) {
       if (IGNORED_DIRS.has(entry.name)) continue
       await collectMarkdownFiles(root, full, acc, depth + 1, options)
-    } else if (options.markdownPattern?.test(entry.name)) {
+    } else if (entry.isFile() && (!options.markdownPattern || options.markdownPattern.test(entry.name))) {
       if (acc.length >= 5000) return
       acc.push({
         name: entry.name,
@@ -111,7 +114,17 @@ export function registerFileSystemIpc(ipcMain, { shell, markdownPattern }) {
   let showHidden = false
 
   ipcMain.handle('fs:readFile', async (_event, path) => {
-    const content = await fs.readFile(path, 'utf8')
+    // Read as a buffer first so binary files (executables, archives, compiled
+    // assets, …) can be rejected before they become mojibake in a tab. A NUL
+    // byte in the first 8 KB is a reliable text/binary discriminator — UTF-8
+    // text never contains U+0000. The sentinel message is matched by the
+    // renderer (useFileOps) to show a friendly "not supported" alert.
+    const buf = await fs.readFile(path)
+    const head = buf.subarray(0, 8192)
+    for (let i = 0; i < head.length; i++) {
+      if (head[i] === 0) throw new Error('ERR_BINARY_FILE')
+    }
+    const content = buf.toString('utf8')
     const stat = await fs.stat(path)
     return { content, mtimeMs: stat.mtimeMs }
   })
