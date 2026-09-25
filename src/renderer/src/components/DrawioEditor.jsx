@@ -274,8 +274,6 @@ export default function DrawioEditor({ tab, onChange, registerApi, onRequestSave
           title="drawio"
           sandbox="allow-scripts allow-same-origin allow-popups allow-downloads allow-forms"
           src={frameUrl}
-          onLoad={() => console.info('[drawio] iframe load event fired')}
-          onError={() => console.info('[drawio] iframe ERROR event fired')}
         />
       )}
     </div>

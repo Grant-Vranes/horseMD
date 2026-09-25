@@ -1,3 +1,8 @@
+## [0.13.248] - 2026-09-25
+
+### Changed
+- 清理 drawio 排查期的临时诊断日志；保留静默的 `--horsemd-drawio-trace` 协议诊断开关。0.13.246–0.13.247 的“打包版 drawio 无法加载”确认为安装/旧进程残留问题，重装即恢复，代码无行为改动。
+
 # Changelog
 
 All notable changes to this project are documented here.
