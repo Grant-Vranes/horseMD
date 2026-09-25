@@ -503,6 +503,14 @@ function registerDrawioProtocol() {
     : [join(app.getAppPath(), 'resources', 'drawio'), resolve(__dirname, '../../resources/drawio')]
   const drawioRoot = candidates.find((p) => existsSync(join(p, 'index.html'))) || candidates[0]
 
+  // Diagnostic tracing (--horsemd-drawio-trace): every protocol request, the
+  // resolved root, and the handler outcome land on the main-process stdout.
+  // Ships in release builds but is fully silent unless the flag is present.
+  const trace = process.argv.includes('--horsemd-drawio-trace')
+  const tlog = (...a) => { if (trace) console.log('[drawio-trace]', ...a) }
+  tlog('root candidates:', candidates.join(' | '))
+  tlog('root selected:', drawioRoot, 'exists:', existsSync(drawioRoot))
+
   protocol.handle('drawio-local', (request) => {
     const url = new URL(request.url)
     // Standard-scheme URLs are drawio-local://<host>/<path>; everything is
@@ -510,9 +518,18 @@ function registerDrawioProtocol() {
     const relPath = decodeURIComponent(url.pathname).replace(/^\/+/, '') || 'index.html'
     const filePath = normalize(join(drawioRoot, relPath))
     if (!filePath.startsWith(normalize(drawioRoot + sep))) {
+      tlog('403 path escape:', request.url)
       return new Response('Forbidden', { status: 403 })
     }
-    return net.fetch(pathToFileURL(filePath).toString())
+    tlog('GET', relPath)
+    const resp = net.fetch(pathToFileURL(filePath).toString())
+    if (trace) {
+      resp.then(
+        (r) => tlog('->', r.status, relPath),
+        (e) => tlog('-> ERROR', relPath, e?.message || String(e))
+      )
+    }
+    return resp
   })
 }
 
