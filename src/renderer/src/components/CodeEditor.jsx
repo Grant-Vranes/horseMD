@@ -39,7 +39,7 @@ const appTheme = EditorView.theme({
 
 const isDarkTheme = () => document.body?.classList?.contains('dark') === true
 
-export default function CodeEditor({ tab, readOnly, onChange, registerApi, onRequestSave }) {
+export default function CodeEditor({ tab, readOnly, onChange, registerApi, onRequestSave, plain }) {
   const hostRef = useRef(null)
   const viewRef = useRef(null)
   const langCompartment = useRef(new Compartment())
@@ -96,9 +96,10 @@ export default function CodeEditor({ tab, readOnly, onChange, registerApi, onReq
 
     // Resolve the language by filename, then load it lazily (language packages
     // are dynamic imports in @codemirror/language-data). Unknown extensions
-    // simply keep plain highlighting.
+    // simply keep plain highlighting. Huge docs pass plain: parsing/highlighting
+    // a multi-MB document buys nothing and delays first paint.
     let cancelled = false
-    const desc = LanguageDescription.matchFilename(languages, filename)
+    const desc = plain ? null : LanguageDescription.matchFilename(languages, filename)
     if (desc) {
       desc.load().then((support) => {
         if (!cancelled && viewRef.current) {
