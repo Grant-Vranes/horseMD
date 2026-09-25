@@ -1379,6 +1379,7 @@ export default function App() {
             spellcheck={settings.spellcheck}
             inlineMathDeleteMode={settings.inlineMathDeleteMode}
             selectionToolbar={settings.selectionToolbar}
+            showImageSrcBadge={settings.showImageSrcBadge}
             readOnly={mobileReadOnly}
             effectiveKeybindings={effectiveKeybindings}
             editorAreaRef={editorAreaRef}

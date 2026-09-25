@@ -39,6 +39,7 @@ import { REVIEW_KINDS } from './editor-review.js'
 import { createEditorApi } from './editor-api.js'
 import { useEditorLightboxControls } from './editor-lightbox.js'
 import { applyImageText, createConfiguredCrepe } from './editor-crepe-setup.js'
+import { imageSrcBadgeKey } from './editor-image-src-badge.js'
 import { mountEditorDomBindings } from './editor-dom-bindings.js'
 import { mountEditorInputTrace, traceEditorEvent } from './editor-input-trace.js'
 import { getCommandShortcut } from '../lib/commands/shortcut-labels.js'
@@ -149,6 +150,7 @@ export default function Editor({
   spellcheck,
   inlineMathDeleteMode,
   selectionToolbar,
+  showImageSrcBadge,
   onToggleSourceRichSplit,
   readOnly = false,
   effectiveKeybindings,
@@ -183,6 +185,11 @@ export default function Editor({
   // decide when the right-click menu should expose text-format actions.
   const selectionToolbarRef = useRef(selectionToolbar !== false)
   selectionToolbarRef.current = selectionToolbar !== false
+  // Live mirror of the image-path badge pref. The badge plugin reads this at
+  // decoration time; the effect below pings the plugin when the pref flips so
+  // badges appear/disappear without recreating the rich editor.
+  const imageSrcBadgeRef = useRef(showImageSrcBadge !== false)
+  imageSrcBadgeRef.current = showImageSrcBadge !== false
   const readOnlyRef = useRef(readOnly)
   readOnlyRef.current = readOnly
   // Crepe can paint its ProseMirror DOM a few synchronous steps before its
@@ -203,6 +210,15 @@ export default function Editor({
     const v = viewRef.current
     if (v?.dom) v.dom.setAttribute('spellcheck', spellcheck ? 'true' : 'false')
   }, [spellcheck])
+  // Ping the image-src-badge plugin when the pref flips so existing badges
+  // appear/disappear immediately, without recreating the rich editor.
+  useEffect(() => {
+    const v = viewRef.current
+    if (!v) return
+    try {
+      v.dispatch(v.state.tr.setMeta(imageSrcBadgeKey, { refresh: true }))
+    } catch { /* view is tearing down */ }
+  }, [showImageSrcBadge])
   // Keep native selection and scrolling available while making the underlying
   // ProseMirror view genuinely non-editable. A CSS-only lock still accepts
   // paste/drop and lets input rules mutate the document.
@@ -1641,7 +1657,8 @@ export default function Editor({
       onFrontmatterValueChange: handleFrontmatterValueChange,
       onInlineCodeValueChange: handleInlineCodeValueChange,
       onSlashCommand: handleSlashCommand,
-      onSourceTransactions: handleSourceTransactions
+      onSourceTransactions: handleSourceTransactions,
+      getImageSrcBadgeEnabled: () => imageSrcBadgeRef.current
     })
     crepeRef.current = crepe
     const serializerStyleHolder = createSerializerStyleHolder(firstContent)

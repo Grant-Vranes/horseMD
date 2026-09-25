@@ -41,6 +41,7 @@ import { highlightFeatures, highlightStringifyHandler } from './editor-highlight
 import { createReviewDecorationPlugin } from './editor-review.js'
 import { normalizeWebPasteHtml } from './editor-web-paste.js'
 import { imageBlockMarkdownSchema } from './editor-image-markdown.js'
+import { createImageSrcBadgePlugin } from './editor-image-src-badge.js'
 import { remarkStripLeadingSpaceSentinel } from '../lib/markdown-leading-space.js'
 import {
   createStrikeGuardPlugin,
@@ -104,7 +105,8 @@ export function createConfiguredCrepe({
   onFrontmatterValueChange,
   onInlineCodeValueChange,
   onSlashCommand,
-  onSourceTransactions
+  onSourceTransactions,
+  getImageSrcBadgeEnabled
 }) {
   const t = getT
   const platform = window.api?.platform
@@ -229,7 +231,14 @@ export function createConfiguredCrepe({
       }),
       createMermaidSplitPlugin(),
       createSubstitutionLiveReconstructPlugin(),
-      createMathBlockPromotionPlugin()
+      createMathBlockPromotionPlugin(),
+      createImageSrcBadgePlugin({
+        getEnabled: getImageSrcBadgeEnabled,
+        getEmbeddedLabel: () => {
+          const value = getT('editor.imageEmbedded')
+          return !value || value === 'editor.imageEmbedded' ? '内嵌图片' : value
+        }
+      })
     ])
 
     ctx.update(remarkStringifyOptionsCtx, (opts) => ({

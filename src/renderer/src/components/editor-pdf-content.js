@@ -337,6 +337,9 @@ const stripEditorAttributes = (clone) => {
 export async function createPdfSourceFromEditor(root) {
   if (!root) return null
   const clone = root.cloneNode(true)
+  // Image-path badges are editor-only chrome; the printed document shows the
+  // author's own content only.
+  clone.querySelectorAll('.hm-image-src-badge').forEach((el) => el.remove())
   const imageSources = [...root.querySelectorAll('img')].map((image) =>
     image.currentSrc || image.getAttribute('src') || ''
   )

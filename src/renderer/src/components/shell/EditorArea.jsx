@@ -60,6 +60,7 @@ export default function EditorArea({
   spellcheck,
   inlineMathDeleteMode,
   selectionToolbar,
+  showImageSrcBadge,
   readOnly,
   effectiveKeybindings,
   editorAreaRef,
@@ -519,6 +520,7 @@ export default function EditorArea({
                 spellcheck={spellcheck}
                 inlineMathDeleteMode={inlineMathDeleteMode}
                 selectionToolbar={selectionToolbar}
+                showImageSrcBadge={showImageSrcBadge}
                 readOnly={readOnly || isSourceRichSplit}
                 effectiveKeybindings={effectiveKeybindings}
                 onChange={(md, isInitial) => updateContent(tab.id, md, isInitial)}

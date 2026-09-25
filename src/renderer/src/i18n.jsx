@@ -416,6 +416,8 @@ export const STRINGS = {
     'settings.selectionToolbar': 'Selection toolbar',
     'settings.selectionToolbarDesc': 'Show the floating formatting toolbar when text is selected. When off, formatting, review, and conversion actions stay available in grouped right-click submenus.',
     'settings.preserveSoftBreaks': 'Preserve source line breaks',
+    'settings.showImageSrcBadge': 'Show image paths',
+    'settings.showImageSrcBadgeDesc': 'Display each image\'s Markdown source path as a small caption under it in rich view. Display only — it never enters the document, copies, or PDF exports.',
     'settings.preserveSoftBreaksDesc': 'Show ordinary source newlines on separate lines in rich mode without changing the Markdown. Enter still creates a paragraph; Shift+Enter creates an explicit hard break.',
     'settings.sourceMode': 'Source mode',
     'settings.sourceFontDesc': 'Source view shows raw Markdown at the same size as the document by default. Nudge this to make source text larger (or smaller) on its own.',
@@ -746,6 +748,7 @@ export const STRINGS = {
 
     // editor
     'editor.placeholder': 'Type / for commands, or just start writing…',
+    'editor.imageEmbedded': '(embedded image)',
     'code.copy': 'Copy',
     'code.copied': 'Copied',
     'frontmatter.edit': 'Edit YAML',
@@ -1199,6 +1202,8 @@ export const STRINGS = {
     'settings.selectionToolbar': '选中文字时显示浮动工具栏',
     'settings.selectionToolbarDesc': '关闭后不再弹出浮动栏；格式、审阅和转换操作会保留在分组的右键子菜单中。',
     'settings.preserveSoftBreaks': '保留源码单换行',
+    'settings.showImageSrcBadge': '显示图片路径',
+    'settings.showImageSrcBadgeDesc': '在富文本视图中，于每张图片下方常驻显示其在 Markdown 源中的路径。仅作展示，不会进入文档、复制内容或 PDF 导出。',
     'settings.preserveSoftBreaksDesc': '在富文本中按原位置显示源码的普通单换行，不修改 Markdown。Enter 仍新建段落，Shift+Enter 仍创建显式硬换行。',
     'settings.sourceMode': '源码模式',
     'settings.sourceFontDesc': '源码视图默认与文档正文同样大小。如需可在此单独把源码字号调大（或调小）。',
@@ -1525,6 +1530,7 @@ export const STRINGS = {
     'workspace.removeFolder': '从工作区移除',
 
     'editor.placeholder': '输入 / 唤起命令，或开始写…',
+    'editor.imageEmbedded': '内嵌图片',
     'code.copy': '复制',
     'code.copied': '已复制',
     'frontmatter.edit': '编辑 YAML',

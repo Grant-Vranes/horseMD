@@ -6737,6 +6737,42 @@ body.hm-table-auto-wrap .milkdown .ProseMirror .milkdown-table-block td {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
+/* Image source-path badge — display-only editor chrome (never serialized,
+   copied, or exported). A block image's badge renders as a widget sibling
+   after the image-block node; an inline image's badge sits right beside it. */
+.milkdown .ProseMirror .hm-image-src-badge {
+  display: block;
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--muted, #8a8f98);
+  opacity: 0.85;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  text-align: center;
+  margin: -4px auto 8px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  user-select: none;
+  pointer-events: auto;
+  direction: ltr;
+}
+.milkdown .ProseMirror .hm-image-src-badge:only-child {
+  /* Block widget between two paragraphs; keep it centered like the image. */
+  margin-left: auto;
+  margin-right: auto;
+}
+.milkdown .ProseMirror p .hm-image-src-badge,
+.milkdown .ProseMirror .hm-image-src-badge.hm-image-src-inline {
+  display: inline;
+  text-align: left;
+  margin: 0 0 0 5px;
+  white-space: nowrap;
+}
+.milkdown .ProseMirror .hm-image-src-badge:hover {
+  opacity: 1;
+}
+
 /* Emphasis */
 .milkdown .ProseMirror strong {
   font-weight: 600;

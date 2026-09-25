@@ -49,6 +49,17 @@ export default function EditorSettings({
         )}
         <div className="settings-row">
           <div className="settings-row-text">
+            <div className="settings-row-label">{t('settings.showImageSrcBadge')}</div>
+            <div className="settings-row-desc">{t('settings.showImageSrcBadgeDesc')}</div>
+          </div>
+          <Toggle
+            checked={settings.showImageSrcBadge !== false}
+            onChange={(showImageSrcBadge) => onUpdateSettings({ showImageSrcBadge })}
+            label={t('settings.showImageSrcBadge')}
+          />
+        </div>
+        <div className="settings-row">
+          <div className="settings-row-text">
             <div className="settings-row-label">{t('settings.inlineMathDelete')}</div>
             <div className="settings-row-desc">{t('settings.inlineMathDeleteDesc')}</div>
           </div>

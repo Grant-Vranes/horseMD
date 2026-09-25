@@ -1,6 +1,6 @@
 {
   "name": "horse",
-  "version": "0.13.253",
+  "version": "0.13.254",
   "description": "HorseMD Markdown Editor",
   "author": "mini_md",
   "license": "MIT",
@@ -121,6 +121,7 @@
     "test:literal-triple-backtick-parser": "node scripts/test-literal-triple-backtick-parser.mjs",
     "test:literal-triple-backtick-source-ui": "node scripts/test-literal-triple-backtick-source-ui.mjs",
     "test:issue-98-ui": "node scripts/test-issue-98-copy-undo-ui.mjs && node scripts/test-session-restore-setting-ui.mjs",
+    "test:image-src-badge-ui": "node scripts/test-image-src-badge-ui.mjs",
     "test:excalidraw-ui": "node scripts/test-excalidraw-ui.mjs",
     "test:new-file-btn-ui": "node scripts/test-new-file-button-ui.mjs",
     "test:canvas-save-ui": "node scripts/test-canvas-save-flow-ui.mjs",

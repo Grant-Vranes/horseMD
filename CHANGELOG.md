@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.13.254] - 2026-09-25
+
+### Added
+- **图片路径常驻角标（设置 › 编辑器 › 显示图片路径，默认开）**：富文本视图中每张图片下方常驻显示其 Markdown 源路径；`data:` 内嵌图片显示“内嵌图片”；超长路径中间截断，悬停可看完整路径。角标仅为展示层，不会进入文档、复制内容或 PDF 导出。
+
 ## [0.13.246] - 2026-09-25
 
 ### Fixed

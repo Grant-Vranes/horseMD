@@ -195,7 +195,10 @@ export const DEFAULT_SETTINGS = {
   mobileReadOnly: false,
   // Wide tables scroll by default. Readers who prefer a print-like layout can
   // opt into wrapping every column into the current writing width instead.
-  tableAutoWrap: false
+  tableAutoWrap: false,
+  // Show the Markdown src of each image as a small badge under it in rich view.
+  // Display-only decoration; never serialized, copied, or exported.
+  showImageSrcBadge: true
 }
 
 function normalizeWidth(w) {
@@ -272,6 +275,7 @@ export function loadSettings() {
       userCssSnippets: normalizeUserCssSnippets(raw.userCssSnippets, raw.userCss),
       mobileReadOnly: raw.mobileReadOnly === true,
       tableAutoWrap: raw.tableAutoWrap === true,
+      showImageSrcBadge: raw.showImageSrcBadge !== false,
       lastPdfDensityPreset: ['comfort', 'standard', 'compact'].includes(raw.lastPdfDensityPreset)
         ? raw.lastPdfDensityPreset
         : 'standard'
