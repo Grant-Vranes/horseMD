@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>horseMD 图片路径查看 - 低保真原型</title>
+<style>
+  body { font-family: "PingFang SC", sans-serif; background: #f2f2f2; color: #222; margin: 0; padding: 24px; }
+  h1 { font-size: 20px; }
+  .toc { background: #fff; border: 1px solid #999; padding: 12px 20px; margin-bottom: 24px; max-width: 900px; }
+  .toc h2 { font-size: 15px; margin: 4px 0; }
+  .toc a { color: #333; }
+  .group-title { font-size: 16px; font-weight: bold; margin: 32px 0 8px; }
+  .group-sub { font-size: 12px; color: #777; margin-bottom: 12px; }
+  .row { display: flex; gap: 24px; flex-wrap: wrap; }
+  .frame { width: 420px; background: #fff; border: 1px solid #555; padding: 0; }
+  .frame-title { background: #e8e8e8; border-bottom: 1px solid #555; padding: 6px 10px; font-size: 13px; font-weight: bold; }
+  .meta { font-size: 11px; color: #666; padding: 6px 10px; border-bottom: 1px dashed #bbb; line-height: 1.6; }
+  .screen { padding: 12px; min-height: 220px; }
+  .doc-line { height: 10px; background: #ddd; margin: 10px 4px; width: 80%; }
+  .doc-line.short { width: 55%; }
+  .img-block { border: 1px solid #999; background: #eee; padding: 14px; text-align: center; margin: 12px 4px; position: relative; }
+  .img-placeholder { height: 90px; background: repeating-linear-gradient(45deg,#e0e0e0,#e0e0e0 10px,#d5d5d5 10px,#d5d5d5 20px); border: 1px solid #aaa; display:flex; align-items:center; justify-content:center; font-size: 12px; color:#666; }
+  .tooltip { position: absolute; top: -14px; left: 12px; background: #333; color: #fff; font-size: 11px; padding: 4px 8px; white-space: nowrap; }
+  .popup { border: 1px solid #444; background: #fafafa; font-size: 12px; margin-top: 10px; padding: 10px; text-align: left; }
+  .popup .path { background: #fff; border: 1px solid #999; padding: 5px 8px; font-family: monospace; margin: 6px 0; }
+  .btn { display: inline-block; border: 1px solid #444; padding: 4px 10px; margin: 4px 6px 0 0; font-size: 12px; background: #fff; }
+  .btn.primary { background: #444; color: #fff; }
+  .badge { font-size: 10px; color: #666; }
+  .note { font-size: 11px; color: #777; margin-top: 10px; line-height: 1.7; }
+  .tbd { border: 1px dashed #888; font-size: 11px; color: #555; padding: 6px 10px; margin-top: 10px; background: #fafafa; }
+  .flow { font-size: 11px; color: #555; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<h1>horseMD — 富文本视图中查看图片链接来源/路径 · 低保真原型</h1>
+<p style="font-size:12px;color:#666;">共 3 个方案、6 屏。黑白灰占位，仅表达结构、位置与交互流程。</p>
+
+<div class="toc">
+  <h2>总览目录</h2>
+  <a href="#a1">方案A · 屏1：悬停显示 tooltip（本地图片）</a><br>
+  <a href="#a2">方案A · 屏2：悬停 tooltip（网络图片 + 失效状态）</a><br>
+  <a href="#b1">方案B · 屏1：点击图片 → 弹出路径浮层</a><br>
+  <a href="#b2">方案B · 屏2：浮层操作后状态（复制路径 / 打开所在文件夹）</a><br>
+  <a href="#c1">方案C · 屏1：常驻角标路径（编辑态显示，悬停高亮）</a><br>
+  <a href="#c2">方案C · 屏2：长路径 / 网络图片的角标形态</a>
+</div>
+
+<!-- ================= 方案 A ================= -->
+<div class="group-title">方案 A：悬停提示（tooltip）</div>
+<div class="group-sub">流程位置：用户在富文本编辑视图中阅读/浏览 → 鼠标悬停任意图片 → 浮出路径提示；移开即消失。最轻量，无状态残留。</div>
+<div class="row">
+
+  <div class="frame" id="a1">
+    <div class="frame-title">屏1 · 悬停 tooltip（本地相对路径图片）</div>
+    <div class="meta">页面：富文本编辑视图｜步骤 1/2｜操作：鼠标悬停图片｜去向：仅显示提示，无跳转</div>
+    <div class="screen">
+      <div class="doc-line"></div>
+      <div class="doc-line short"></div>
+      <div class="img-block">
+        <div class="tooltip">src: ./assets/screenshot-20260706.png</div>
+        <div class="img-placeholder">图片占位（正常加载）</div>
+      </div>
+      <div class="doc-line"></div>
+      <div class="flow">交互：悬停 → 800ms 后浮出 tooltip，显示原始 Markdown src（保持文档中写法，如 ./assets/…）</div>
+      <div class="note">· tooltip 内容 = 原始 src（相对路径原样显示，不转换为 file:// 展示）<br>· 移开鼠标即消失，不挡编辑</div>
+      <div class="tbd">[待确认] 是否需要在 tooltip 中同时显示"解析后的绝对路径"？</div>
+    </div>
+  </div>
+
+  <div class="frame" id="a2">
+    <div class="frame-title">屏2 · 悬停 tooltip（网络图片 / 加载失败）</div>
+    <div class="meta">页面：富文本编辑视图｜步骤 2/2｜操作：悬停网络图片或失效图片｜去向：无跳转</div>
+    <div class="screen">
+      <div class="doc-line"></div>
+      <div class="img-block">
+        <div class="tooltip">src: https://pic.example.com/QQ_2026.png</div>
+        <div class="img-placeholder">图片占位（网络图 / 或加载失败占位块）</div>
+      </div>
+      <div class="doc-line short"></div>
+      <div class="flow">网络图片：直接显示完整 URL；加载失败的图片同样可悬停，tooltip 用来排查路径错误</div>
+      <div class="tbd">[待确认] 加载失败时是否把 src 直接印在失败占位块上（不用悬停即可见）？</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ================= 方案 B ================= -->
+<div class="group-title">方案 B：点击图片 → 路径浮层（含操作）</div>
+<div class="group-sub">流程位置：用户浏览/排查图片 → 单击图片 → 弹出浮层显示路径并提供操作 → 点击空白处或关闭按钮返回。</div>
+<div class="row">
+
+  <div class="frame" id="b1">
+    <div class="frame-title">屏1 · 点击图片弹出路径浮层</div>
+    <div class="meta">页面：富文本编辑视图｜步骤 1/2｜操作：单击图片｜去向：浮层打开（屏2 为其中操作结果）</div>
+    <div class="screen">
+      <div class="doc-line"></div>
+      <div class="img-block" style="outline: 2px solid #333;">
+        <div class="img-placeholder">图片占位（被单击，出现选中描边）</div>
+        <div class="popup">
+          <b>图片信息</b> <span class="badge">浮层锚定在图片下方</span>
+          <div class="path">./assets/screenshot-20260706.png</div>
+          <span class="btn">复制路径</span>
+          <span class="btn">打开所在文件夹</span>
+          <span class="btn">关闭 ✕</span>
+        </div>
+      </div>
+      <div class="flow">点击 [复制路径] → 系统剪贴板获得原始 src，浮层内按钮短暂变为"已复制"<br>点击 [打开所在文件夹] → 仅本地图片可用，调起系统文件管理器并选中文件<br>点击文档空白处 / 关闭 → 浮层消失</div>
+      <div class="tbd">[待确认] 网络图片是否提供"在浏览器中打开"按钮？</div>
+    </div>
+  </div>
+
+  <div class="frame" id="b2">
+    <div class="frame-title">屏2 · 复制后的反馈状态</div>
+    <div class="meta">页面：同一浮层｜步骤 2/2｜操作：已点击复制路径｜去向：稍后自动恢复按钮文字</div>
+    <div class="screen">
+      <div class="doc-line short"></div>
+      <div class="img-block">
+        <div class="img-placeholder">图片占位</div>
+        <div class="popup">
+          <b>图片信息</b>
+          <div class="path">./assets/screenshot-20260706.png</div>
+          <span class="btn primary">已复制 ✓</span>
+          <span class="btn">打开所在文件夹</span>
+          <span class="btn">关闭 ✕</span>
+        </div>
+      </div>
+      <div class="note">· "打开所在文件夹"仅对本地（相对路径/绝对路径）图片启用，网络图片该按钮置灰<br>· 浮层不阻塞编辑器其他区域</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ================= 方案 C ================= -->
+<div class="group-title">方案 C：常驻角标 / 下方小字路径</div>
+<div class="group-sub">流程位置：编辑态中路径始终可见（类似 Typora 编辑态），无需任何操作；悬停时角标高亮。视觉上更重。</div>
+<div class="row">
+
+  <div class="frame" id="c1">
+    <div class="frame-title">屏1 · 常驻角标（常规长度路径）</div>
+    <div class="meta">页面：富文本编辑视图｜步骤 1/2｜操作：无需操作，路径常驻显示｜去向：悬停可高亮（屏2 为长路径形态）</div>
+    <div class="screen">
+      <div class="doc-line"></div>
+      <div class="img-block">
+        <div class="img-placeholder">图片占位</div>
+        <div style="font-size:10px;color:#666;margin-top:6px;font-family:monospace;">./assets/screenshot-20260706.png</div>
+      </div>
+      <div class="doc-line short"></div>
+      <div class="flow">路径以小字显示在图片下方（或右上角标），编辑态常驻；打印/导出 PDF 与 text/html 复制时不包含该角标</div>
+      <div class="tbd">[待确认] 角标是否需要在输入法/编辑该图片时自动隐藏？</div>
+    </div>
+  </div>
+
+  <div class="frame" id="c2">
+    <div class="frame-title">屏2 · 长路径 / 网络 URL 的截断形态</div>
+    <div class="meta">页面：富文本编辑视图｜步骤 2/2｜操作：悬停角标可看完整路径｜去向：无</div>
+    <div class="screen">
+      <div class="doc-line"></div>
+      <div class="img-block">
+        <div class="img-placeholder">图片占位</div>
+        <div style="font-size:10px;color:#666;margin-top:6px;font-family:monospace;">https://pic.example.com/very/…/QQ_2026.png…</div>
+        <div class="tooltip" style="left: auto; right: 8px; top: 100%; margin-top: 18px;">完整: https://pic.example.com/very/long/path/QQ_2026.png</div>
+      </div>
+      <div class="doc-line"></div>
+      <div class="flow">超长路径中间截断（…），悬停时浮出完整路径 tooltip</div>
+      <div class="note">· 与方案 A 可叠加：角标负责"常驻可见"，tooltip 负责完整内容</div>
+    </div>
+  </div>
+
+</div>
+
+<p class="note" style="max-width:900px;">
+方案对比小结：<br>
+· <b>A 悬停 tooltip</b>：零视觉负担、实现最轻，但路径"不可发现"，需用户试出来。<br>
+· <b>B 点击浮层</b>：可承载操作（复制/打开文件夹），交互最完整，但需要一次点击，且要处理浮层与选区/拖拽的冲突。<br>
+· <b>C 常驻角标</b>：信息最直观，排查路径问题最快，但文档图片多时视觉噪音大，且需严格隔离导出/复制链路。<br>
+也可以组合（如 A + B：悬停看路径、点击出操作）。
+</p>
+
+</body>
+</html>
