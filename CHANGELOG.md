@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.13.246] - 2026-09-25
+
+### Fixed
+- **HTML 预览：文件名含 # 或 ? 时渲染空白**：`local-html://` 帧 URL 现在对路径做 URI 编码，含 `#`/`?` 等字符的文件名不再被截断为无效路径。
+
 ## [0.13.245] - 2026-09-25
 
 ### Changed

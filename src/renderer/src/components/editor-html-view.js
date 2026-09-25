@@ -33,9 +33,16 @@ export function saveHtmlViewMode(path, mode) {
 // local-html://doc/<abs-path> (registered in src/main/index.js): a sandboxed
 // file: iframe loads nothing (opaque origin), while local-html is a standard
 // scheme the sandbox happily navigates. Relative subresources resolve against
-// the document path inside the same scheme.
+// the document path inside the same scheme. The path must be URI-encoded:
+// a raw '#' or '?' in a filename would otherwise be parsed as a fragment or
+// query and truncate the path (main decodes with decodeURIComponent).
 export function buildHtmlFrameUrl(tab) {
   const norm = String(tab?.path || '').replace(/\\/g, '/')
   if (!norm) return ''
-  return 'local-html://doc' + (norm.startsWith('/') ? norm : '/' + norm)
+  const pathPart = norm.startsWith('/') ? norm : '/' + norm
+  // encodeURI alone leaves '#' and '?' intact — they must be escaped too,
+  // otherwise the URL parser treats them as fragment/query and truncates the
+  // document path (main decodes with decodeURIComponent).
+  const encoded = pathPart.split('/').map(encodeURIComponent).join('/')
+  return 'local-html://doc' + encoded
 }
