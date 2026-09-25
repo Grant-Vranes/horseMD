@@ -1,6 +1,7 @@
 import { useI18n } from '../i18n.jsx'
 import AboutSettings from './settings/AboutSettings.jsx'
 import AppearanceSettings from './settings/AppearanceSettings.jsx'
+import DevtoolsSettings from './settings/DevtoolsSettings.jsx'
 import EditorSettings from './settings/EditorSettings.jsx'
 import FilesSettings from './settings/FilesSettings.jsx'
 import GeneralSettings from './settings/GeneralSettings.jsx'
@@ -107,6 +108,9 @@ export default function SettingsView({
             globalShortcutStatus={globalShortcutStatus}
             t={t}
           />
+        )}
+        {active === 'devtools' && (
+          <DevtoolsSettings t={t} />
         )}
         {active === 'about' && (
           <AboutSettings t={t} />

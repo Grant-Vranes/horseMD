@@ -294,6 +294,7 @@ const capabilities = {
   closeToTray: false,
   globalShortcuts: false,
   devtools: false,
+  inspectElement: false,
   pdfExport: false, // no print-to-PDF save dialog on mobile
   excalidraw: false, // whiteboard canvas is desktop-only
   drawio: false, // diagrams.net editor iframe is desktop-only

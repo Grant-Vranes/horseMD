@@ -1,4 +1,5 @@
 import { installPlatformBridge } from './platform' // install window.api bridge (Capacitor on mobile) before App renders
+import { installInspectElementContextMenu } from './lib/inspect-context-menu'
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.jsx'
@@ -11,5 +12,6 @@ installPlatformBridge()
     /* a failed mobile bridge still renders — features degrade, the shell lives */
   })
   .then(() => {
+    installInspectElementContextMenu()
     createRoot(document.getElementById('root')).render(<App />)
   })

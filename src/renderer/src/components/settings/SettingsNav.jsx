@@ -7,6 +7,7 @@ export const SETTINGS_SECTIONS = [
   { id: 'files', labelKey: 'settings.files', icon: 'folder' },
   { id: 'sync', labelKey: 'settings.sync', icon: 'cloud' },
   { id: 'keyboard', labelKey: 'settings.keyboard', icon: 'command' },
+  { id: 'devtools', labelKey: 'settings.devtools', icon: 'terminal' },
   { id: 'about', labelKey: 'settings.about', icon: 'sparkle' }
 ]
 

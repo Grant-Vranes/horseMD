@@ -123,6 +123,12 @@ const api = {
   windowClose: () => ipcRenderer.invoke('window:close'),
   windowIsMaximized: () => ipcRenderer.invoke('window:isMaximized'),
   windowToggleDevTools: () => ipcRenderer.invoke('window:toggleDevTools'),
+  // open DevTools docked to the bottom (or close if already open); used by the
+  // Settings › Developer tools button so the panel is always visible
+  windowOpenDevTools: () => ipcRenderer.invoke('devtools:open'),
+  // open DevTools inspecting the element at (clientX, clientY); used by the
+  // generic right-click handler when no custom context menu handled the event
+  windowInspectElement: (x, y) => ipcRenderer.invoke('devtools:inspectElement', x, y),
   // Settings › General: with close-to-tray on, closing the window hides it to
   // the tray instead of quitting (tray icon / the show-hide shortcut bring it
   // back).
@@ -179,6 +185,7 @@ const api = {
     // Desktop-only: OS-level (globalShortcut) commands such as show/hide window.
     globalShortcuts: true,
     devtools: true,
+    inspectElement: true,
     pdfExport: true,
     htmlExport: true,
     pandocExport: true,
