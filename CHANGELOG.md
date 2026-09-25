@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.13.245] - 2026-09-25
+
+### Changed
+- **HTML 切换按钮图标随模式切换**：预览模式显示 `</>` 代码图标（点击切源码），源码模式显示网页文档图标（点击回预览）。
 ## [0.13.244] - 2026-09-25
 
 ### Changed

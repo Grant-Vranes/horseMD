@@ -320,7 +320,7 @@ export default function EditorArea({
                   title={t('html.toggleSource')}
                   onClick={() => onToggleHtmlSource?.(tab.id)}
                 >
-                  <Icon name="html" size={16} />
+                  <Icon name={htmlShowSource ? 'html' : 'code'} size={16} />
                 </button>
               )}
               {!htmlRenderEligible && !isMobile && (
