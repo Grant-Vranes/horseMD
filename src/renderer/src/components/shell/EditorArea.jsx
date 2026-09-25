@@ -317,6 +317,7 @@ export default function EditorArea({
                 <button
                   type="button"
                   className="icon-btn html-mode-toggle"
+                  data-mode={htmlShowSource ? 'source' : 'render'}
                   title={t('html.toggleSource')}
                   onClick={() => onToggleHtmlSource?.(tab.id)}
                 >

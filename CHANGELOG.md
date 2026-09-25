@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.13.243] - 2026-09-25
+
+### Changed
+- **HTML 标签右上角的「源码/预览」切换按钮改为胶囊样式**：半透明底 + 描边 + 圆点状态指示（橙色=预览、灰色=源码），悬停提亮，浮在页面内容上更清晰、不遮挡正文。
 ## [0.13.242] - 2026-09-25
 
 ### Added
