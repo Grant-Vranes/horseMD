@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.13.244] - 2026-09-25
+
+### Changed
+- **HTML 标签右上角切换按钮改为悬浮图标按钮**：30px 圆角方形、悬浮投影 + 悬停微升起，单一 `</>` 图标（悬停提示说明当前作用），不再使用胶囊文字样式。
 ## [0.13.243] - 2026-09-25
 
 ### Changed

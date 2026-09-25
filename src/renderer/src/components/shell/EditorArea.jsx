@@ -317,11 +317,10 @@ export default function EditorArea({
                 <button
                   type="button"
                   className="icon-btn html-mode-toggle"
-                  data-mode={htmlShowSource ? 'source' : 'render'}
                   title={t('html.toggleSource')}
                   onClick={() => onToggleHtmlSource?.(tab.id)}
                 >
-                  {htmlShowSource ? t('html.toggleRenderLabel') : t('html.toggleSourceLabel')}
+                  <Icon name="html" size={16} />
                 </button>
               )}
               {!htmlRenderEligible && !isMobile && (

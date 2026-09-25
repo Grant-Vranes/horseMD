@@ -7518,39 +7518,29 @@ body.dark .milkdown .ProseMirror .hm-review-card-text {
   top: 10px;
   right: 14px;
   z-index: 5;
+  width: 30px;
+  height: 30px;
+  padding: 0;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--border-soft, rgba(127, 127, 127, 0.35));
-  background: var(--bg-elevated, rgba(255, 255, 255, 0.85));
+  justify-content: center;
+  border-radius: 8px;
+  border: none;
+  background: var(--bg-elevated, #faf8f5);
   color: var(--muted, inherit);
-  font-size: 12px;
-  line-height: 18px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
-  opacity: 0.92;
-  transition: opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  font-size: 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.15s ease, transform 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
 .html-mode-toggle:hover {
-  opacity: 1;
-  background: var(--hover-elevated, rgba(255, 255, 255, 0.95));
-  border-color: var(--border, rgba(127, 127, 127, 0.5));
+  background: var(--hover-elevated, #fff);
   color: var(--text, inherit);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
 }
 .html-mode-toggle:active {
-  background: var(--hover, rgba(127, 127, 127, 0.2));
-}
-.html-mode-toggle::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent, #c86b35);
-  flex: none;
-}
-.html-mode-toggle[data-mode='source']::before {
-  background: var(--muted, inherit);
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 }
 .html-too-large-notice {
   position: absolute;
