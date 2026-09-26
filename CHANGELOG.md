@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.13.257] - 2026-09-26
+
+### Added
+- **图片悬浮删除按钮**：富文本视图中鼠标悬停/选中图片时，显示与 Crepe 图注按钮同风格的圆形删除按钮，点击即删除该图片节点；按钮仅为编辑器 chrome，不会进入复制内容或 PDF 导出。回归：`scripts/test-image-remove-button-ui.mjs`。
+
+## [0.13.264] - 2026-09-26
+
+### Fixed
+- **新插入的图片与已有图片表现不一致**：粘贴/拖入的图片之前以行内 image 节点插入，导致靠左、无图注/缩放工具栏，且其序列化结果 `![alt](src)` 重新解析时会变成 image-block，与实时文档不一致而误报「富文本与源码不一致」。现在插入的图片统一作为与已有图片相同的 image-block 节点（居中、带工具栏、可缩放、可点开查看器）。回归：`scripts/test-image-insert-block-ui.mjs`。
+
 ## [0.13.256] - 2026-09-26
 
 ### Fixed

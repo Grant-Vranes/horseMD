@@ -120,9 +120,12 @@ async function main() {
     await waitFor(() => evaluate(`!document.querySelector('.hm-save-fab')`), 'Save did not complete')
 
     const saved = await readFile(file, 'utf8')
+    // Pasted images render as image-block nodes (same as authored standalone
+    // images), so the committed source is a standalone image line after the
+    // paragraph, not an inline image inside it.
     assert.match(
       saved,
-      /第一段，这里粘贴图片。!\[[^\]]*\]\(assets\/[^)]+\.png\)/,
+      /第一段，这里粘贴图片。\n\n!\[[^\]]*\]\(assets\/[^)]+\.png\)/,
       `Saved file lost the pasted image: ${JSON.stringify(saved)}`
     )
     console.log('PASS: image paste committed to source, no mismatch toast, file saved with image')

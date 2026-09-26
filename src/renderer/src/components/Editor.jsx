@@ -446,12 +446,36 @@ export default function Editor({
     let appending = false
 
     // Insert an image at the caret (used by paste / drop of image files). Persists
-    // the file first, then drops an inline image node with the resulting src.
+    // the file first, then drops an image-block node with the resulting src.
+    // Authored standalone images parse as `image-block` (centered, caption/
+    // resize toolbar, lightbox zoom). Inserting a plain inline `image` node
+    // instead rendered a left-aligned toolbar-less image, and its serialized
+    // `![alt](src)` re-parsed as an image-block on the next pass, so the live
+    // document diverged from its own serialization and tripped the fail-closed
+    // source-sync mismatch toast. Insert the same block node the parser would
+    // produce so new and existing images behave identically.
     const insertUploadedImage = async (file, fromClipboard = false) => {
       if (readOnlyRef.current) return
       const url = await persistImage(file, fromClipboard)
       const v = viewRef.current
       if (!v || !url) return
+      const blockType = v.state.schema.nodes['image-block']
+      if (blockType) {
+        const node = blockType.create({ src: url, alt: file.name || '', caption: '', ratio: 1 })
+        markUserEdit()
+        const { $from } = v.state.selection
+        const tr = v.state.tr
+        // Inside an empty paragraph, replace the paragraph wholesale so the
+        // image becomes the paragraph's block successor, exactly like source
+        // mode's `![](path)` on its own line.
+        if ($from.parent.type.name === 'paragraph' && $from.parent.content.size === 0) {
+          tr.replaceWith($from.before(), $from.after(), node)
+        } else {
+          tr.replaceSelectionWith(node, false)
+        }
+        v.dispatch(tr.scrollIntoView())
+        return
+      }
       const imgType = v.state.schema.nodes.image
       if (!imgType) return
       const node = imgType.create({ src: url, alt: file.name || '' })
