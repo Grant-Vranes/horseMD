@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.13.265] - 2026-09-26
+
+### Changed
+- 图片悬浮删除按钮底色改为灰色 `#6E7169`。
+
 ## [0.13.257] - 2026-09-26
 
 ### Added
