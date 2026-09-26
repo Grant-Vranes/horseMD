@@ -225,6 +225,156 @@ const displayMathSemanticContent = (value) => String(value || '')
 // region. Letting the generic middle-block mapper own the insertion adds a blank
 // row before the closing `$$`, which changes the parsed code_block text by one
 // trailing newline and creates a first-divergence on every keystroke.
+// Image-block attribute edits (caption, resize ratio, src replacement; trace
+// horsemd-input-trace-54911) change only invisible bytes INSIDE the image
+// token `![...](url "title")`. Images contribute zero visible characters, so
+// the visible-affinity fallback splices inside the token and drops the `![`
+// opener (`第一段。图注Ae.png](assets/...`). When the canonical delta lies
+// within one image token on both sides, rewrite the whole token in the source
+// anchored by its URL. Multiple source tokens sharing the URL are ambiguous:
+// fail closed so the structural mappers keep ownership.
+const imageTokensInLine = (text, lineStart = 0) => {
+  const tokens = []
+  const re = /!\[/g
+  let match
+  while ((match = re.exec(text))) {
+    const open = match.index
+    const closeBracket = text.indexOf(']', open + 2)
+    if (closeBracket === -1 || text[closeBracket + 1] !== '(') continue
+    const closeParen = text.indexOf(')', closeBracket + 2)
+    if (closeParen === -1) continue
+    tokens.push({
+      start: lineStart + open,
+      end: lineStart + closeParen + 1,
+      text: text.slice(open, closeParen + 1)
+    })
+  }
+  return tokens
+}
+
+const imageTokenSrc = (tokenText) => {
+  const inner = tokenText.slice(tokenText.indexOf('](') + 2, -1)
+  // Strip an optional ` "title"` suffix; URLs containing ` "` are not matched
+  // as tokens here (title extraction only looks at the tail).
+  return inner.replace(/\s+"(?:[^"\\]|\\.)*"$/, '')
+}
+
+export const preserveImageTokenChange = ({
+  source,
+  previous,
+  next,
+  start,
+  previousEnd,
+  nextEnd
+}) => {
+  if (previousEnd <= start && nextEnd <= start) return null
+  const previousLine = lineAt(previous, start)
+  const nextLine = lineAt(next, start)
+  if (previousEnd > previousLine.end || nextEnd > nextLine.end) {
+    if (nextEnd > start) return null
+    // Pure deletion may extend past the token's line end: image-block row
+    // deletion removes the row plus its paragraph separator.
+  }
+  const previousTokens = imageTokensInLine(
+    previous.slice(previousLine.start, previousLine.end),
+    previousLine.start
+  )
+  let deletionPreviousTokens = previousTokens
+  if (nextEnd <= start && previousEnd > previousLine.end) {
+    deletionPreviousTokens = imageTokensInLine(previous)
+  }
+  let previousToken = null
+  let deletionSeparatorSide = null
+  if (nextEnd > start) {
+    previousToken = previousTokens.find((token) =>
+      start >= token.start && previousEnd <= token.end
+    )
+    if (!previousToken) return null
+  } else {
+    // Pure deletion: the deleted canonical bytes must be exactly the token,
+    // or the token plus a blank-line separator on one side (image-block row
+    // deletion deletes the row and its paragraph separator).
+    const deleted = previous.slice(start, previousEnd)
+    const candidates = deletionPreviousTokens.filter((token) => {
+      if (deleted === token.text) return true
+      if (token.end === previousEnd && deleted.endsWith(token.text)) {
+        return /^(?:\r?\n)+$/.test(deleted.slice(0, deleted.length - token.text.length))
+      }
+      if (token.start === start && deleted.startsWith(token.text)) {
+        return /^(?:\r?\n)+$/.test(deleted.slice(token.text.length))
+      }
+      return false
+    })
+    if (candidates.length !== 1) return null
+    previousToken = candidates[0]
+    deletionSeparatorSide = deleted.endsWith(previousToken.text) && deleted.length > previousToken.text.length
+      ? 'before'
+      : deleted.length > previousToken.text.length ? 'after' : null
+  }
+  let nextToken = null
+  if (nextEnd > start) {
+    const nextTokens = imageTokensInLine(next.slice(nextLine.start, nextLine.end), nextLine.start)
+    nextToken = nextTokens.find((token) =>
+      start >= token.start && nextEnd <= token.end
+    )
+    if (!nextToken) return null
+  }
+  const oldSrc = imageTokenSrc(previousToken.text)
+  if (!oldSrc) return null
+  const candidates = []
+  for (const line of markdownLines(source)) {
+    for (const token of imageTokensInLine(line.text, line.start)) {
+      if (imageTokenSrc(token.text) === oldSrc) candidates.push(token)
+    }
+  }
+  if (candidates.length !== 1) return null
+  const target = candidates[0]
+  if (nextEnd > start) {
+    return {
+      markdown: source.slice(0, target.start) + nextToken.text + source.slice(target.end),
+      preserved: true,
+      reason: 'image-token-change'
+    }
+  }
+  const line = markdownLines(source).find((entry) =>
+    entry.start <= target.start && target.end <= entry.end
+  )
+  if (line && line.text.trim() === target.text) {
+    // Standalone image line deletion: drop the line and the adjacent blank
+    // separator on the side the canonical deletion removed, so the
+    // surrounding blocks stay separated.
+    const lines = markdownLines(source)
+    const index = lines.indexOf(line)
+    const after = lines[index + 1]
+    const before = lines[index - 1]
+    let removeStart = line.start
+    let removeEnd = line.end
+    const preferAfter = deletionSeparatorSide !== 'before'
+    if (preferAfter && after && after.text.trim() === '') removeEnd = after.end
+    else if (!preferAfter && before && before.text.trim() === '') removeStart = before.start
+    else if (after && after.text.trim() === '') removeEnd = after.end
+    else if (before && before.text.trim() === '') removeStart = before.start
+    if (removeEnd > line.end && source[removeEnd] === '\n') removeEnd += 1
+    let markdown = source.slice(0, removeStart) + source.slice(removeEnd)
+    // Junction cleanup: removing the row may leave a triple newline at the
+    // seam; collapse ONLY at the seam, never inside the document body.
+    const seam = removeStart
+    if (/\n\n$/.test(markdown.slice(0, seam)) && markdown[seam] === '\n') {
+      markdown = markdown.slice(0, seam) + markdown.slice(seam + 1)
+    }
+    return {
+      markdown,
+      preserved: true,
+      reason: 'image-token-change'
+    }
+  }
+  return {
+    markdown: source.slice(0, target.start) + source.slice(target.end),
+    preserved: true,
+    reason: 'image-token-change'
+  }
+}
+
 export const preserveDisplayMathBlockTextChange = ({
   source,
   previous,

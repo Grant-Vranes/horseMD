@@ -54,6 +54,7 @@ import {
   preserveDivergedLeadingSpaceListWhitespaceTail,
   preserveDivergedTailBulletBodyEmptied,
   preserveDisplayMathBlockTextChange,
+  preserveImageTokenChange,
   preserveChangedLineRegion,
   preserveLocallyAlignedTextChange,
   preserveOrdinalLineTextChange,
@@ -1923,6 +1924,18 @@ function preserveRichMarkdownSourceCore(sourceMarkdown, previousCanonical, nextC
     nextEnd
   })
   if (trailingEmptyPreserved) return trailingEmptyPreserved
+  // Image-block attribute families (caption/ratio/src-replace, trace 54911):
+  // the canonical delta is invisible and lives inside one image token. Claim
+  // it before any visible-affinity fallback can splice inside the token.
+  const imageTokenPreserved = preserveImageTokenChange({
+    source: sourceMarkdown,
+    previous,
+    next,
+    start,
+    previousEnd,
+    nextEnd
+  })
+  if (imageTokenPreserved) return imageTokenPreserved
   // Display math still has a dedicated legacy source boundary because it is
   // not owned by the fenced-code Transaction Journal family. Fenced code-block
   // content is transaction-owned and deliberately has no canonical-diff mapper.

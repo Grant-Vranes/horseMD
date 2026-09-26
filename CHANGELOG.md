@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.13.256] - 2026-09-26
+
+### Fixed
+- **图片替换、缩放、删除、改图注全部误报「富文本与源码不一致」且无法保存**：图片 token（`![...](url "title")`）内部字节在可见流中为 0 字符，Crepe 图片块组件以程序化事务修改 alt/title/src 后，事务 journal 因缺少最近文本输入而不认领，落到可见流兜底 mapper，把拼接点落进 token 内部并丢掉 `![` 开头（产生如 `第一段。图注Ae.png](assets/...` 的残骸），校验失败后弹出 sticky 警告且保存按钮不再出现。新增 `preserveImageTokenChange`：当 canonical 增量整体落在单个图片 token 内（图注/比例/替换 src/整行删除）时，按 URL 唯一锚定源码中的旧 token 整体重写；URL 重复（歧义）时 fail-closed。回归：`scripts/test-image-attr-change-source-sync.mjs`、`scripts/test-image-block-attr-ui.mjs`。
+
 ## [0.13.255] - 2026-09-26
 
 ### Fixed
