@@ -54,7 +54,7 @@ export function mountEditorContentBindings({
       materializeCopiedSoftBreaks(wrapper)
       // The image-path badges are display-only editor chrome; they must never
       // ride along in any clipboard flavor.
-      wrapper.querySelectorAll('.hm-image-src-badge').forEach((el) => el.remove())
+      wrapper.querySelectorAll('.hm-image-src-badge, .hm-image-remove').forEach((el) => el.remove())
       // A mid-list selection clones <li> without its list wrapper. Whether the
       // items were ordered is only visible in the LIVE dom — inspect it before
       // styling so the re-wrapped clipboard fragment keeps its numbering.

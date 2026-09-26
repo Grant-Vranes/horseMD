@@ -6773,6 +6773,42 @@ body.hm-table-auto-wrap .milkdown .ProseMirror .milkdown-table-block td {
   opacity: 1;
 }
 
+/* Image hover "remove" button — display-only editor chrome (never serialized,
+   copied, or exported). Styled exactly like Crepe's image operation-item
+   (32px circular gray button) and docked right-aligned just below the
+   operation row, so the two controls stack without overlapping. */
+.hm-image-remove {
+  position: fixed;
+  top: -40px;
+  left: -40px;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--crepe-color-on-inverse, #fff) 30%, transparent);
+  border-radius: 50%;
+  background: var(--crepe-color-inverse, rgba(120, 120, 120, 0.85));
+  color: var(--crepe-color-on-inverse, #fff);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, background 0.14s var(--ease-out);
+  user-select: none;
+}
+.hm-image-remove svg {
+  width: 18px;
+  height: 18px;
+}
+.hm-image-remove.visible {
+  opacity: 0.7;
+  pointer-events: auto;
+}
+.hm-image-remove.visible:hover {
+  opacity: 1;
+}
+
 /* Emphasis */
 .milkdown .ProseMirror strong {
   font-weight: 600;

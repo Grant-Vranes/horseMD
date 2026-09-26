@@ -42,6 +42,7 @@ import { createReviewDecorationPlugin } from './editor-review.js'
 import { normalizeWebPasteHtml } from './editor-web-paste.js'
 import { imageBlockMarkdownSchema } from './editor-image-markdown.js'
 import { createImageSrcBadgePlugin } from './editor-image-src-badge.js'
+import { createImageRemoveButtonPlugin } from './editor-image-remove-button.js'
 import { remarkStripLeadingSpaceSentinel } from '../lib/markdown-leading-space.js'
 import {
   createStrikeGuardPlugin,
@@ -238,7 +239,8 @@ export function createConfiguredCrepe({
           const value = getT('editor.imageEmbedded')
           return !value || value === 'editor.imageEmbedded' ? '内嵌图片' : value
         }
-      })
+      }),
+      createImageRemoveButtonPlugin({ isReadOnly })
     ])
 
     ctx.update(remarkStringifyOptionsCtx, (opts) => ({
