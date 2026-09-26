@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.13.255] - 2026-09-26
+
+### Fixed
+- **图片粘贴后误报「富文本与源码不一致」**：替换/粘贴文件名仅时间戳不同的图片时，文件名数字（URL 内部，不可见字符）被本地对齐映射器错误拼接列前一个标题后（如 `## 合集概览101635357`）。不可见→不可见字节增量改为按唯一 raw 锚点重定位，歧义时 fail-closed 交给结构化 mapper。回归：`scripts/test-image-src-invisible-delta.mjs`。
+
 ## [0.13.254] - 2026-09-25
 
 ### Added

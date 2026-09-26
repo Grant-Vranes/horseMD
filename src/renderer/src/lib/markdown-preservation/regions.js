@@ -381,6 +381,52 @@ export const preserveLocallyAlignedTextChange = ({
   const previousChangedVisible = previousVisible.text.slice(visibleStart, visibleEnd)
   if (!previousChangedVisible && !replacementVisible) return null
 
+  // Image-filename corruption (0.13.254 trace 43946): replacing one persisted
+  // image with another changes only digits INSIDE the URL — images carry zero
+  // visible characters, so the canonical delta is an invisible→invisible
+  // replacement. The standalone `replacementVisible` index above wrongly counts
+  // the digits as visible (they are only invisible inside document syntax), the
+  // zero-width visible anchor then collapses onto the preceding heading text
+  // boundary, and the splice produced `## 合集概览101635357`. Index the
+  // replacement's visibility IN CONTEXT: when both sides of the delta are
+  // invisible in their documents, the visible-stream affinity position carries
+  // no information. Re-anchor to the unique raw occurrence of the deleted text
+  // near the affinity position; if that anchor is ambiguous, fail closed so
+  // the line/block mappers with real structural context take over.
+  if (!previousChangedVisible && previousEnd > start) {
+    const nextVisible = sourceVisibleIndex(next)
+    const nextChangedVisible = nextVisible.text.slice(visibleStart, visibleEnd)
+    if (!nextChangedVisible) {
+      const deletedRaw = previous.slice(start, previousEnd)
+      const affinityRawStart = rawOffsetAtVisible(source, startVisible)
+      const affinityRawEnd = rawOffsetAtVisible(source, endVisible)
+      if (
+        !Number.isFinite(affinityRawStart) ||
+        !Number.isFinite(affinityRawEnd) ||
+        affinityRawStart > affinityRawEnd
+      ) return null
+      const searchFrom = Math.max(0, Math.min(affinityRawStart, affinityRawEnd) - 160)
+      const searchTo = Math.min(source.length, Math.max(affinityRawStart, affinityRawEnd) + 160)
+      const window = source.slice(searchFrom, searchTo)
+      let occurrence = window.indexOf(deletedRaw)
+      let occurrences = 0
+      while (occurrence !== -1) {
+        occurrences += 1
+        if (occurrences > 1) break
+        occurrence = window.indexOf(deletedRaw, occurrence + 1)
+      }
+      if (occurrences !== 1) return null
+      const rawAt = searchFrom + window.indexOf(deletedRaw)
+      return {
+        markdown: source.slice(0, rawAt) +
+          adaptCanonicalRegionToSource(replacement, source, { start: rawAt, end: rawAt + deletedRaw.length }) +
+          source.slice(rawAt + deletedRaw.length),
+        preserved: true,
+        reason: 'locally-aligned-change'
+      }
+    }
+  }
+
   const changedLines = lineRegion(previous, start, previousEnd)
   const lineVisibleStart = sourceVisiblePositionAtRaw(previous, changedLines.start).visibleIndex
   const lineVisibleEnd = sourceVisiblePositionAtRaw(previous, changedLines.end).visibleIndex
