@@ -25,13 +25,18 @@ function createButtonElement(onRemove) {
   el.title = '移除图片'
   el.setAttribute('aria-label', '移除图片')
   el.contentEditable = 'false'
-  // Trash icon in Crepe's stroke-icon style.
+  // Style is set inline so no stylesheet ordering/pipeline issue can strip the
+  // gray circular background — the button must read as a distinct control.
+  el.style.background = '#6E7169'
+  el.style.color = '#FFFFFF'
+  // Trash icon with an explicit white stroke (not currentColor) so it stays
+  // clearly legible on the gray circle in every theme.
   el.innerHTML =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+    '<svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" ' +
     'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>' +
-    '<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>' +
-    '<path d="M10 11v6"/><path d="M14 11v6"/></svg>'
+    '<path d="M3 6h18" stroke="#FFFFFF"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="#FFFFFF"/>' +
+    '<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" stroke="#FFFFFF"/>' +
+    '<path d="M10 11v6" stroke="#FFFFFF"/><path d="M14 11v6" stroke="#FFFFFF"/></svg>'
   // Keep the button outside ProseMirror's event flow entirely.
   el.addEventListener('mousedown', (event) => {
     event.preventDefault()

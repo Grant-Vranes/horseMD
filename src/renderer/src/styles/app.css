@@ -6789,6 +6789,8 @@ body.hm-table-auto-wrap .milkdown .ProseMirror .milkdown-table-block td {
   padding: 0;
   border: 1px solid color-mix(in srgb, var(--crepe-color-on-inverse, #fff) 30%, transparent);
   border-radius: 50%;
+  /* Keep the gray circle in sync with the inline style in
+     editor-image-remove-button.js (source of truth lives there). */
   background: #6E7169;
   color: var(--crepe-color-on-inverse, #fff);
   cursor: pointer;
