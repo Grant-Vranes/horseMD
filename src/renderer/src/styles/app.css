@@ -6816,6 +6816,63 @@ body.hm-table-auto-wrap .milkdown .ProseMirror .milkdown-table-block td {
   opacity: 1;
 }
 
+/* Image hover "align" button group — same editor-chrome pattern as
+   .hm-image-remove, docked inside the image's top-LEFT corner. Three 32px
+   circular buttons (left / center / right); the current alignment gets the
+   accent-colored active state. */
+.hm-image-align {
+  position: fixed;
+  top: -40px;
+  left: -40px;
+  z-index: 60;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  user-select: none;
+}
+.hm-image-align.visible {
+  opacity: 0.85;
+  pointer-events: auto;
+}
+.hm-image-align.visible:hover {
+  opacity: 1;
+}
+.hm-image-align-item {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--crepe-color-on-inverse, #fff) 30%, transparent);
+  border-radius: 50%;
+  background: #6E7169;
+  cursor: pointer;
+  transition: background 0.14s var(--ease-out);
+}
+.hm-image-align-item:hover {
+  background: #5A5D56;
+}
+.hm-image-align-item.active {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.hm-image-align-item svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Visible alignment for block images. Crepe centers .image-wrapper
+   (fit-content + margin: 0 auto) by default, so "center" needs no rule;
+   only left/right override the margins via the decoration-added class. */
+.milkdown .milkdown-image-block.hm-align-left > .image-wrapper {
+  margin: 0 auto 0 0;
+}
+.milkdown .milkdown-image-block.hm-align-right > .image-wrapper {
+  margin: 0 0 0 auto;
+}
+
 /* Emphasis */
 .milkdown .ProseMirror strong {
   font-weight: 600;

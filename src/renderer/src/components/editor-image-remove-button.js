@@ -50,7 +50,7 @@ function createButtonElement(onRemove) {
   return el
 }
 
-export function createImageRemoveButtonPlugin({ isReadOnly } = {}) {
+export function createImageRemoveButtonPlugin({ isReadOnly, markUserEdit } = {}) {
   let hoveredBlock = null
 
   const hide = () => {
@@ -69,6 +69,11 @@ export function createImageRemoveButtonPlugin({ isReadOnly } = {}) {
     view.state.doc.descendants((node, pos) => {
       if (deleted || node.type !== imageBlockType) return true
       if (view.nodeDOM(pos) === blockEl) {
+        // Raise the user-edit TTL BEFORE dispatching — same contract as the
+        // align buttons: without it markdownUpdated skips the commit (the
+        // hasRecentUserEdit gate), the source baseline goes stale, and the
+        // next save fails closed with the source-sync mismatch toast.
+        markUserEdit?.()
         view.dispatch(view.state.tr.delete(pos, pos + node.nodeSize))
         deleted = true
         return false
