@@ -1,3 +1,9 @@
+## [0.13.268] - 2026-09-28
+
+### Fixed
+- **同一张图（相同 src URL）在文档中重复插入时，编辑其中一张（对齐 / 改图注 / 缩放 / 替换 / 删除）不再误报「检测到富文本与源码不一致 / 保存已暂停」**。此前 `preserveImageTokenChange` 只要检测到同 URL 图片多于一张就 fail-closed，通用 mapper 会把图片 token 内不可见的 alt 字节错拼到附近的可见行上（例如把对齐后缀 `|right` 写进前一行列表正文形成 `项目甲|right`），完整性校验失败后弹出 sticky 警告。现在按被编辑 token 在同 URL 基线 token 中的序号锁定目标，仅在源码与基线同 URL 数量/顺序一致且同序号字节完全相同时才改写对应那一张，否则仍 fail-closed。回归：`scripts/test-image-attr-change-source-sync.mjs`（新增 8/9 组：重复 URL 对齐第一/第二张、图注、删除，序数错位与数量不一致仍拒绝）、`scripts/repro-image-dupe-url.mjs`（真实 Electron 复现：无 toast、`ok:true`、`image-token-change` owner 命中、作者列表符号保持不变）。
+- **图片选「居中」时不再误报且不再复制图像行**。居中不写 `|center` 后缀，而是把已有的 `|left`/`|right` 整段去掉——这是一种只缩小 token 的**子 token 删除**。此前删除分支只接受整张图片 token 的删除，居中会落回 `structural-line-change`，把一张图复制成三行并触发错误提示。现在删除分支辨识 token 内部的一段、并在源码目标 token 与基线字节一致时按相同相对偏移剥掉那段（否则 fail-closed）。回归：`scripts/test-image-attr-change-source-sync.mjs`（新增第 10 组：重复/单张 `|right` 图居中、字节分叉时拒绝）、`scripts/repro-image-dupe-center.mjs`（真实 Electron：无 toast、`ok:true`、仅第一张变居中、作者 `+` 与第二张 `|right` 保持）。
+
 ## [0.13.248] - 2026-09-25
 
 ### Changed

@@ -231,8 +231,10 @@ const displayMathSemanticContent = (value) => String(value || '')
 // the visible-affinity fallback splices inside the token and drops the `![`
 // opener (`第一段。图注Ae.png](assets/...`). When the canonical delta lies
 // within one image token on both sides, rewrite the whole token in the source
-// anchored by its URL. Multiple source tokens sharing the URL are ambiguous:
-// fail closed so the structural mappers keep ownership.
+// anchored by its URL. Multiple source tokens sharing the URL are ambiguous;
+// disambiguate by the edited token's rank among same-URL baseline tokens when
+// count/order and same-rank bytes prove safe, else fail closed so a structural
+// mapper can keep ownership.
 const imageTokensInLine = (text, lineStart = 0) => {
   const tokens = []
   const re = /!\[/g
@@ -292,8 +294,10 @@ export const preserveImageTokenChange = ({
     if (!previousToken) return null
   } else {
     // Pure deletion: the deleted canonical bytes must be exactly the token,
-    // or the token plus a blank-line separator on one side (image-block row
-    // deletion deletes the row and its paragraph separator).
+    // the token plus a blank-line separator on one side (image-block row
+    // deletion deletes the row and its paragraph separator), or a strict
+    // sub-string INSIDE one token (e.g. clicking 居中 strips the `|right`
+    // align suffix).
     const deleted = previous.slice(start, previousEnd)
     const candidates = deletionPreviousTokens.filter((token) => {
       if (deleted === token.text) return true
@@ -303,6 +307,14 @@ export const preserveImageTokenChange = ({
       if (token.start === start && deleted.startsWith(token.text)) {
         return /^(?:\r?\n)+$/.test(deleted.slice(token.text.length))
       }
+      // Strict sub-token deletion fully inside one token: an invisible edit
+      // that only shrinks the token, so no visible affinity can place it.
+      if (
+        deleted.length > 0 &&
+        deleted.length < token.text.length &&
+        start > token.start &&
+        previousEnd <= token.end
+      ) return true
       return false
     })
     if (candidates.length !== 1) return null
@@ -321,17 +333,63 @@ export const preserveImageTokenChange = ({
   }
   const oldSrc = imageTokenSrc(previousToken.text)
   if (!oldSrc) return null
-  const candidates = []
-  for (const line of markdownLines(source)) {
-    for (const token of imageTokensInLine(line.text, line.start)) {
-      if (imageTokenSrc(token.text) === oldSrc) candidates.push(token)
+  const collect = (doc) => {
+    const out = []
+    for (const line of markdownLines(doc)) {
+      for (const token of imageTokensInLine(line.text, line.start)) {
+        if (imageTokenSrc(token.text) === oldSrc) out.push(token)
+      }
     }
+    return out
   }
-  if (candidates.length !== 1) return null
-  const target = candidates[0]
+  const candidates = collect(source)
+  const baselineTokens = collect(previous)
+  // A src URL reused N times in one document (users commonly embed the same
+  // local asset more than once) is ambiguous by URL alone. The canonical edit
+  // still discloses WHICH occurrence it was via its rank among same-src
+  // baseline tokens. Honor that rank only when both documents carry the same
+  // count/order of the URL AND the same-rank baseline token is byte-identical
+  // to the source token (so this edit genuinely applied to that image).
+  // Anything else — a one-off URL, a genuinely ambiguous reuse, or an order
+  // mismatch — fail closed as before.
+  const baselineRank = baselineTokens.findIndex((t) => t.start === previousToken.start)
+  let target = null
+  if (candidates.length === 1) {
+    target = candidates[0]
+  } else if (
+    baselineRank >= 0 &&
+    candidates.length === baselineTokens.length &&
+    baselineTokens[baselineRank]?.text === candidates[baselineRank]?.text
+  ) {
+    target = candidates[baselineRank]
+  }
+  if (!target) return null
   if (nextEnd > start) {
     return {
       markdown: source.slice(0, target.start) + nextToken.text + source.slice(target.end),
+      preserved: true,
+      reason: 'image-token-change'
+    }
+  }
+  // Partial (strict sub-token) deletion — e.g. clicking 居中 strips a `|right`
+  // align suffix inside the token. Splice the same relative bytes out of the
+  // source target token. The target token must be byte-identical to the
+  // baseline token so the relative offsets are valid; otherwise fail closed
+  // rather than let a visible-affinity mapper corrupt sibling lines.
+  const deleted = previous.slice(start, previousEnd)
+  if (
+    previousToken &&
+    deleted.length > 0 &&
+    deleted.length < previousToken.text.length &&
+    start >= previousToken.start &&
+    previousEnd <= previousToken.end
+  ) {
+    if (target.text !== previousToken.text) return null
+    const relStart = start - previousToken.start
+    const relEnd = previousEnd - previousToken.start
+    const rewritten = previousToken.text.slice(0, relStart) + previousToken.text.slice(relEnd)
+    return {
+      markdown: source.slice(0, target.start) + rewritten + source.slice(target.end),
       preserved: true,
       reason: 'image-token-change'
     }
