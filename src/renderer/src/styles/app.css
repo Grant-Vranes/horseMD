@@ -6735,6 +6735,11 @@ body.hm-table-auto-wrap .milkdown .ProseMirror .milkdown-table-block td {
   margin: var(--editor-block-space) auto;
   display: block;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  /* Disable native browser image drag — it conflicts with editor drop
+     handling (URL injection / upload conflicts). See onImageDragStart in
+     editor-dom-content.js. */
+  -webkit-user-drag: none;
+  user-select: none;
 }
 
 /* Image source-path badge — display-only editor chrome (never serialized,

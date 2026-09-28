@@ -212,6 +212,19 @@ export function mountEditorContentBindings({
     setZoom({ type: 'svg', html: clone.outerHTML, width, height })
   }
 
+  // Native browser image drag hijacks mousedown on <img>: it starts an OS-level
+  // drag carrying HTML/URL payload, which conflicts with the editor's own
+  // drop-image upload handler and can inject foreign HTML into the document on
+  // drop. Block dragstart originating from editor images (capture phase, before
+  // ProseMirror's own drag handling); non-image content drag stays untouched.
+  const onImageDragStart = (event) => {
+    const target = event.target
+    if (!target?.closest?.('img, .image-wrapper, .milkdown-image-block')) return
+    if (!view.dom.contains(target)) return
+    event.preventDefault()
+    event.stopImmediatePropagation()
+  }
+
   view.dom.addEventListener('click', onLinkClick, true)
   view.dom.addEventListener('click', onImageClick, true)
   view.dom.addEventListener('click', onMermaidClick, true)
@@ -220,6 +233,8 @@ export function mountEditorContentBindings({
   view.dom.addEventListener('copy', onCopy, true)
   view.dom.addEventListener('paste', onPasteImage, true)
   view.dom.addEventListener('drop', onDropImage, true)
+  view.dom.addEventListener('dragstart', onImageDragStart, true)
+  cleanups.push(() => view.dom.removeEventListener('dragstart', onImageDragStart, true))
   cleanups.push(
     attachMdPasteHandler(view, (markdown) => {
       try {
