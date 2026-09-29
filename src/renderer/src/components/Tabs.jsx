@@ -70,6 +70,12 @@ export default function Tabs({
     clearTipTimer()
     setTip(null)
   }
+  // If the tipped tab closes (close ✕ under the pointer, middle-click, context
+  // menu, etc.) the hover that would normally hide the tip never happens, so
+  // the card would linger forever. Drop it as soon as its tab is gone.
+  useEffect(() => {
+    setTip((current) => current && tabs.some((tab) => tab.id === current.tab.id) ? current : null)
+  }, [tabs])
   const [fadeLeft, setFadeLeft] = useState(false)
   const [fadeRight, setFadeRight] = useState(false)
 
