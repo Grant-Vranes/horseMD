@@ -422,7 +422,11 @@ button:focus-visible,
   pointer-events: none;
   border: 2px dashed color-mix(in srgb, var(--accent) 80%, transparent);
   background: color-mix(in srgb, var(--bg-elevated) 88%, var(--accent) 4%);
-  backdrop-filter: blur(2px);
+  /* NOTE: backdrop-filter removed — real-time blur over the topbar during a
+     native file drag crashes the GPU compositing path on some Windows
+     driver combinations, leaving the whole window black (renderer gone).
+     If reintroducing blur, test on affected machines first. */
+  /* backdrop-filter: blur(2px); */
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
   animation: hm-drop-open-in 140ms var(--ease-out);
 }
@@ -512,12 +516,19 @@ button:focus-visible,
   padding: 0 12px;
   background: var(--bg-elevated);
   border-bottom: 1px solid var(--border-soft);
-  -webkit-app-region: drag;
+  /* NOT a window drag region: Electron swallows HTML5 drag events over
+     -webkit-app-region: drag areas, so drops would only land on the tab
+     pills instead of anywhere on the topbar. Window dragging stays available
+     on the tab-strip background and the activity bar. macOS keeps the drag
+     region: its traffic-light strip is the primary drag handle and the topbar
+     spans the full window width there. */
+  -webkit-app-region: no-drag;
   position: relative;
   z-index: 10;
   min-width: 0;
   overflow: hidden;
 }
+.app.is-mac .topbar { -webkit-app-region: drag; }
 /* Windows & Linux: the renderer draws its own caption buttons (see .win-controls / .gtk-controls),
    so the top bar no longer reserves space for a native overlay. */
 .app.is-win .topbar,
@@ -529,15 +540,13 @@ button:focus-visible,
    reserves a clear band for the lights (matches trafficLightPosition in main). */
 .app.is-mac .topbar { grid-column: 1 / -1; padding-left: 80px; }
 .app.is-mac .activity-bar { grid-row: 2 / -1; }
-/* The whole top bar drags the window; only the actual interactive controls
-   opt out. The tab STRIP background stays draggable while it fits, but once
-   the tabs overflow, the strip must scroll smoothly: wheel/touch events over
-   an app-region: drag area are swallowed by the OS window drag, which made
-   horizontal scrolling work only when the pointer sat on a tab pill. An
-   overflowing strip opts out (can-scroll class, toggled in Tabs.jsx); window
-   dragging is still available on the topbar background and .topbar-spacer. */
+/* The tab STRIP background is NOT a window drag region either: drag regions
+   swallow HTML5 drag events, which would break file drops and (once the tabs
+   overflow) smooth horizontal scrolling. The can-scroll class is no longer
+   needed for drag purposes but is kept for other scroll UX. Window dragging
+   is available on the activity bar (and, on macOS, the topbar itself). */
 .topbar .tabs,
-.topbar .tabs-scroll { -webkit-app-region: drag; }
+.topbar .tabs-scroll { -webkit-app-region: no-drag; }
 .topbar .tabs-scroll.can-scroll { -webkit-app-region: no-drag; }
 .topbar .drag-no,
 .topbar .tab,
@@ -1860,6 +1869,21 @@ body.resizing-pane .pane-left-resizer::before {
   flex-direction: column;
   height: 100%;
   position: relative;
+}
+
+/* External shell drag (OS file manager) hovering over the sidebar: highlight
+   the whole pane as a drop-to-add-workspace target. */
+.sidebar.drop-target,
+.sidebar-empty.drop-target {
+  outline: 2px dashed color-mix(in srgb, var(--accent) 80%, transparent);
+  outline-offset: -2px;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+.sidebar-drop-hint {
+  margin: 0;
+  padding: 0;
+  color: var(--faint);
+  font-size: 12px;
 }
 .sidebar-head {
   display: flex;
