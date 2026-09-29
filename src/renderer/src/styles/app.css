@@ -6873,6 +6873,31 @@ body.hm-table-auto-wrap .milkdown .ProseMirror .milkdown-table-block td {
   margin: 0 0 0 auto;
 }
 
+/* The path badge is a sibling widget after the image-block, so it must track
+   the block's visible alignment itself (otherwise it stays centered even when
+   the image above is aligned left/right). */
+.milkdown .ProseMirror .milkdown-image-block.hm-align-left + .hm-image-src-badge {
+  text-align: left;
+  margin-left: 0;
+}
+.milkdown .ProseMirror .milkdown-image-block.hm-align-right + .hm-image-src-badge {
+  text-align: right;
+  margin-left: auto;
+  margin-right: 0;
+}
+
+/* Caption (alt-text) input also spans the full block width with hard-coded
+   centering in Crepe's theme; make it track the visible alignment too. */
+.milkdown .milkdown-image-block.hm-align-left > .caption-input {
+  text-align: left;
+  margin-left: 0;
+}
+.milkdown .milkdown-image-block.hm-align-right > .caption-input {
+  text-align: right;
+  margin-left: auto;
+  margin-right: 0;
+}
+
 /* Emphasis */
 .milkdown .ProseMirror strong {
   font-weight: 600;
