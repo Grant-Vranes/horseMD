@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- 支持从系统文件管理器将文件夹直接拖入左侧文件工作区，快捷添加为新工作区根目录：拖入时侧边栏整栏高亮提示，松手后文件夹加入工作区（拖入的文件则作为标签页打开）。空工作区占位面板同样接受拖入并显示提示文案（`workspace.dropHint`）。共享的拖放解析逻辑抽取到 `src/renderer/src/lib/drop-paths.js`，顶栏拖放打开（`useDropOpen`）与侧边栏拖放共用。
+
 ## [0.13.266] - 2026-09-26
 
 ### Fixed

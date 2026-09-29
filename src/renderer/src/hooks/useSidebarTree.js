@@ -16,11 +16,31 @@ export function useSidebarTree({ folderRoots, activePath, refreshNonce }) {
     return nodes
   }, [])
 
+  // Previous roots snapshot, so a root change only expands what's new instead
+  // of collapsing/expanding the whole tree (e.g. when a folder is dropped in).
+  const prevRootsRef = useRef(null)
+
   useEffect(() => {
     setChildrenMap({})
     const roots = folderRootsKey ? folderRootsKey.split('\n') : []
-    setExpanded(new Set(roots))
+    setExpanded((current) => {
+      if (prevRootsRef.current === null) return new Set(roots)
+      const prevKeys = new Set(prevRootsRef.current.map(normalizePathKey))
+      const rootKeys = roots.map(normalizePathKey)
+      const stillMounted = (item) => {
+        const key = normalizePathKey(item)
+        return rootKeys.some((rk) => key === rk || key.startsWith(rk + '/'))
+      }
+      const next = new Set([...current].filter(stillMounted))
+      // Newly added roots start expanded so the drop/add result is visible;
+      // everything else keeps its current collapsed/expanded state.
+      roots.forEach((root) => {
+        if (!prevKeys.has(normalizePathKey(root))) next.add(root)
+      })
+      return next
+    })
     roots.forEach((root) => loadDir(root))
+    prevRootsRef.current = roots
   }, [folderRootsKey, loadDir])
 
   useEffect(() => {

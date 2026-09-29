@@ -744,6 +744,7 @@ export const STRINGS = {
     // workspace (single, unnamed — just a bag of folder roots)
     'workspace.title': 'Workspace',
     'workspace.addFolder': 'Add folder',
+    'workspace.dropHint': 'Or drop a folder here to add it to the workspace',
     'workspace.removeFolder': 'Remove from workspace',
 
     // editor
@@ -1527,6 +1528,7 @@ export const STRINGS = {
     // 工作区(单一、无名 —— 就是一组文件夹)
     'workspace.title': '工作区',
     'workspace.addFolder': '添加文件夹',
+    'workspace.dropHint': '或将文件夹拖到此处，快捷添加到工作区',
     'workspace.removeFolder': '从工作区移除',
 
     'editor.placeholder': '输入 / 唤起命令，或开始写…',

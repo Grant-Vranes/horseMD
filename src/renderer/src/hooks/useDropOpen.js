@@ -1,32 +1,12 @@
 import { useEffect, useState } from 'react'
-
-const hasExternalFiles = (event) =>
-  Array.from(event.dataTransfer?.types || []).includes('Files')
-
-const droppedNativePaths = (dataTransfer) => {
-  const resolvePath = window.api.getPathForDroppedFile
-  if (!resolvePath) return []
-  const paths = []
-  const seen = new Set()
-  for (const file of [...(dataTransfer?.files || [])]) {
-    let path = ''
-    try {
-      path = resolvePath(file)
-    } catch {
-      path = ''
-    }
-    if (!path || seen.has(path)) continue
-    seen.add(path)
-    paths.push(path)
-  }
-  return paths
-}
+import { hasExternalFiles, droppedNativePaths, openDroppedPaths } from '../lib/drop-paths.js'
 
 // Desktop shell drop-open boundary. Dropping external files/folders on the
 // topbar opens them as tabs/workspaces; drops anywhere else are ignored so the
 // editor keeps its own insert behaviors. Internal tab/sidebar/outline drags do
 // not carry the native `Files` type and are ignored. Drops without native
 // paths (e.g. an image dragged from a browser) fall through to the editor.
+// The sidebar has its own drop boundary for quickly adding workspace folders.
 export function useDropOpen({ enabled, openPaths, addFolder }) {
   const [active, setActive] = useState(false)
 
@@ -40,15 +20,9 @@ export function useDropOpen({ enabled, openPaths, addFolder }) {
     const hasExternalFileDrag = (event) => hasExternalFiles(event)
     const overTopbar = (event) => Boolean(event.target?.closest?.('.topbar'))
 
-    const openDroppedPaths = async (paths) => {
+    const handleDropPaths = async (paths) => {
       if (!paths.length) return
-      const entries = await window.api.classifyDroppedPaths(paths)
-      const files = []
-      for (const entry of entries || []) {
-        if (entry?.type === 'dir') addFolder(entry.path)
-        else if (entry?.type === 'file') files.push(entry.path)
-      }
-      if (files.length) await openPaths(files)
+      await openDroppedPaths(paths, { addFolder, openPaths })
     }
 
     const onDragEnter = (event) => {
@@ -95,7 +69,7 @@ export function useDropOpen({ enabled, openPaths, addFolder }) {
       if (!paths.length) return
       event.preventDefault()
       event.stopPropagation()
-      void openDroppedPaths(paths)
+      void handleDropPaths(paths)
         // The dropped item may disappear or become unreadable after the native
         // drag starts. Treat that like a cancelled drop instead of leaving an
         // unhandled renderer promise rejection.

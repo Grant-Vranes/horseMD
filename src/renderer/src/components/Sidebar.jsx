@@ -13,6 +13,11 @@ import { copyToClipboard, fireToast } from '../ui.js'
 import { EMPTY_EXCALIDRAW_SCENE } from '../lib/excalidraw-scene.js'
 import { EMPTY_DRAWIO_XML } from '../lib/drawio-file.js'
 import { useSidebarTree } from '../hooks/useSidebarTree.js'
+import {
+  hasExternalFiles,
+  droppedNativePaths,
+  openDroppedPaths
+} from '../lib/drop-paths.js'
 import SidebarContextMenu from './SidebarContextMenu.jsx'
 
 export default function Sidebar({
@@ -28,7 +33,9 @@ export default function Sidebar({
   refreshNonce,
   syncSupported = false,
   syncFolderPaths = [],
-  onEnableSyncFolder
+  onEnableSyncFolder,
+  onOpenPaths,
+  onAddDroppedFolder
 }) {
   const { t } = useI18n()
   const copyText = (text) => copyToClipboard(text, t('code.copied'))
@@ -52,6 +59,80 @@ export default function Sidebar({
   const [trashGhost, setTrashGhost] = useState(null)
   const [trashConsumed, setTrashConsumed] = useState(false)
   const trashTimersRef = useRef([])
+  // External shell drags (OS file manager → sidebar): highlight the whole
+  // sidebar and add dropped folders as workspace roots on drop. Handled with
+  // window-level capture listeners — the same approach as the topbar drop-open
+  // boundary — because tree rows claim bubbling drop events and native
+  // cross-process drags never carry a relatedTarget (which makes synthetic
+  // dragenter/dragleave highlight flicker).
+  const [externalDragOver, setExternalDragOver] = useState(false)
+  const externalHideTimerRef = useRef(null)
+  const supportsExternalDrop = Boolean(
+    window.api?.classifyDroppedPaths && window.api?.getPathForDroppedFile && onAddDroppedFolder
+  )
+
+  useEffect(() => {
+    if (!supportsExternalDrop) return undefined
+    const inSidebar = (event) =>
+      Boolean(event.target?.closest?.('.sidebar, .sidebar-empty'))
+    const scheduleHide = () => {
+      if (externalHideTimerRef.current) return
+      externalHideTimerRef.current = setTimeout(() => {
+        externalHideTimerRef.current = null
+        setExternalDragOver(false)
+      }, 120)
+    }
+    const cancelHide = () => {
+      if (!externalHideTimerRef.current) return
+      clearTimeout(externalHideTimerRef.current)
+      externalHideTimerRef.current = null
+    }
+    const onDragOver = (event) => {
+      if (!hasExternalFiles(event)) return
+      if (!inSidebar(event)) {
+        // Pointer moved off the sidebar: retire the highlight shortly after
+        // (the timer is cancelled by the next dragover back inside).
+        scheduleHide()
+        return
+      }
+      event.preventDefault()
+      if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy'
+      cancelHide()
+      setExternalDragOver(true)
+    }
+    const onDragLeave = (event) => {
+      if (!hasExternalFiles(event)) return
+      if (!inSidebar(event)) return
+      if (event.relatedTarget && event.target?.contains?.(event.relatedTarget)) return
+      // Native (cross-process) drags have a null relatedTarget even when
+      // moving between children, so leaving a row must not clear the
+      // highlight immediately — debounce and let the next dragover cancel.
+      scheduleHide()
+    }
+    const onDrop = (event) => {
+      if (!hasExternalFiles(event)) return
+      cancelHide()
+      setExternalDragOver(false)
+      if (!inSidebar(event)) return
+      const paths = droppedNativePaths(event.dataTransfer)
+      if (!paths.length) return
+      event.preventDefault()
+      event.stopPropagation()
+      void openDroppedPaths(paths, { addFolder: onAddDroppedFolder, openPaths: onOpenPaths })
+        // The dropped item may disappear or become unreadable after the native
+        // drag starts. Treat that like a cancelled drop.
+        .catch(() => {})
+    }
+    window.addEventListener('dragover', onDragOver, true)
+    window.addEventListener('dragleave', onDragLeave, true)
+    window.addEventListener('drop', onDrop, true)
+    return () => {
+      window.removeEventListener('dragover', onDragOver, true)
+      window.removeEventListener('dragleave', onDragLeave, true)
+      window.removeEventListener('drop', onDrop, true)
+      cancelHide()
+    }
+  }, [supportsExternalDrop, onAddDroppedFolder, onOpenPaths])
   const { childrenMap, expanded, setExpanded, loadDir, toggle, activeRowRef } =
     useSidebarTree({ folderRoots, activePath, refreshNonce })
   const folderRootsKey = folderRoots.join('\n')
@@ -303,6 +384,9 @@ export default function Sidebar({
     },
     onDragLeave: () => setDragOver((d) => (d === destDir ? null : d)),
     onDrop: (e) => {
+      // External shell drags are claimed by the sidebar's window-level capture
+      // drop handler; without an in-flight internal drag, don't touch the event.
+      if (!dragPathRef.current) return
       e.preventDefault()
       e.stopPropagation()
       const src = dragPathRef.current
@@ -336,7 +420,7 @@ export default function Sidebar({
   // Empty state: no folder roots yet.
   if (!folderRoots.length) {
     return (
-      <div className="sidebar-empty">
+      <div className={`sidebar-empty${externalDragOver ? ' drop-target' : ''}`}>
         <div className="sidebar-empty-panel">
           <div className="sidebar-empty-icon">
             <Icon name="folder" size={24} />
@@ -345,6 +429,7 @@ export default function Sidebar({
             <Icon name="folder" size={15} />
             {t('workspace.addFolder')}
           </button>
+          {supportsExternalDrop && <p className="sidebar-drop-hint">{t('workspace.dropHint')}</p>}
         </div>
       </div>
     )
@@ -505,7 +590,7 @@ export default function Sidebar({
   }
 
   return (
-    <div className="sidebar">
+    <div className={`sidebar${externalDragOver ? ' drop-target' : ''}`}>
       <div className="sidebar-head">
         <span className="sidebar-title">{t('workspace.title')}</span>
         <div className="sidebar-head-actions">

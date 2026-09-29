@@ -1306,6 +1306,8 @@ export default function App() {
                 syncSupported={syncWorkspaces.supported}
                 syncFolderPaths={syncWorkspaces.registered.map((entry) => entry.rootPath)}
                 onEnableSyncFolder={enableSyncFolder}
+                onOpenPaths={openPaths}
+                onAddDroppedFolder={addDroppedFolder}
               />
             ) : sidebarMode === 'search' ? (
               <GlobalSearchPanel
