@@ -42,7 +42,10 @@ import { applyImageText, createConfiguredCrepe } from './editor-crepe-setup.js'
 import { imageSrcBadgeKey } from './editor-image-src-badge.js'
 import { mountEditorDomBindings } from './editor-dom-bindings.js'
 import { mountEditorInputTrace, traceEditorEvent } from './editor-input-trace.js'
-import { createSourceSyncWarningManager } from './editor-source-sync-warning.js'
+import {
+  createSourceSyncWarningManager,
+  SOURCE_SYNC_TOAST_DURATION_MS
+} from './editor-source-sync-warning.js'
 import { getCommandShortcut } from '../lib/commands/shortcut-labels.js'
 import {
   generatedScratchMarkdown,
@@ -536,6 +539,7 @@ export default function Editor({
           userEditUntil = Date.now() + 1000
           return
         }
+        noteSourceSyncRecovery('frontmatter-value')
         pendingSourceSyncTransactionJournal = null
         clearRichFlushPending()
       } catch {
@@ -580,6 +584,7 @@ export default function Editor({
           userEditUntil = Date.now() + 1000
           return
         }
+        noteSourceSyncRecovery('inline-code-value')
         pendingSourceSyncTransactionJournal = null
         clearRichFlushPending()
       } catch {
@@ -1305,6 +1310,7 @@ export default function Editor({
           userEditUntil = Date.now() + 1000
           return null
         }
+        noteSourceSyncRecovery('slash-block')
         transactionSourcePendingPublish = false
         transactionSourcePendingDoc = null
         transactionSourceBlockHints = []
@@ -1444,6 +1450,7 @@ export default function Editor({
               revision: coordinated?.snapshot?.revision ?? null
             })
             if (coordinated?.ok) {
+              noteSourceSyncRecovery('raw-paste-owned')
               pendingRawMarkdownPasteRef.current = null
               wholeDocumentReplacementPending = null
               transactionSourcePendingPublish = false
@@ -1732,7 +1739,7 @@ export default function Editor({
       fire: (signature, sticky) => {
         fireToast(
           tRef.current('save.sourceSyncMismatch'),
-          sticky ? { sticky: true } : { duration: 6000 }
+          sticky ? { sticky: true } : { duration: SOURCE_SYNC_TOAST_DURATION_MS }
         )
       },
       trace: (name, data) => {
@@ -1742,7 +1749,7 @@ export default function Editor({
         traceEditorEvent(name, data)
       }
     })
-    globalThis.__hmSourceSyncWarning = sourceSyncWarning
+    if (!globalThis.__hmSourceSyncWarning) globalThis.__hmSourceSyncWarning = sourceSyncWarning
     let lastSourceSyncWarning = null
     const reportSourceSyncFailure = (reason) => {
       const now = Date.now()
@@ -2056,6 +2063,7 @@ export default function Editor({
         }
       }
       pendingSourceSyncTransactionJournal = null
+      noteSourceSyncRecovery('plain-paragraph-shared-owner')
       if (Array.isArray(globalThis.__hmPreserveLog)) {
         globalThis.__hmPreserveLog.push({
           source: planned.journal.source,
@@ -2277,6 +2285,7 @@ export default function Editor({
           if (planned.ok) {
             const coordinated = sourceSyncBridge.publish(planned.publication)
             if (coordinated?.ok) {
+              noteSourceSyncRecovery('list-conversion')
               pendingSourceSyncTransactionJournal = null
               clearRichFlushPending()
             } else userEditUntil = Date.now() + 1000
@@ -2401,6 +2410,7 @@ export default function Editor({
         if (planned.ok) {
           const coordinated = sourceSyncBridge.publish(planned.publication)
           if (coordinated?.ok) {
+            noteSourceSyncRecovery('block-to-list')
             pendingSourceSyncTransactionJournal = null
             clearRichFlushPending()
             pendingListConversion = null
@@ -2713,6 +2723,7 @@ export default function Editor({
                 reason: coordinatedReplacement?.reason || null
               })
             } else {
+            noteSourceSyncRecovery('paste-token-owned')
             transactionSourcePendingPublish = false
             transactionSourcePendingDoc = null
             transactionSourceBlockHints = []
@@ -3439,7 +3450,7 @@ export default function Editor({
       cleanups.push(() => cancelDeferredMarkdownSync())
       cleanups.push(() => {
         sourceSyncWarning.dispose()
-        delete globalThis.__hmSourceSyncWarning
+        if (globalThis.__hmSourceSyncWarning === sourceSyncWarning) delete globalThis.__hmSourceSyncWarning
       })
     })
 
