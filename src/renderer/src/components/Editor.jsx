@@ -42,6 +42,7 @@ import { applyImageText, createConfiguredCrepe } from './editor-crepe-setup.js'
 import { imageSrcBadgeKey } from './editor-image-src-badge.js'
 import { mountEditorDomBindings } from './editor-dom-bindings.js'
 import { mountEditorInputTrace, traceEditorEvent } from './editor-input-trace.js'
+import { createSourceSyncWarningManager } from './editor-source-sync-warning.js'
 import { getCommandShortcut } from '../lib/commands/shortcut-labels.js'
 import {
   generatedScratchMarkdown,
@@ -1721,9 +1722,22 @@ export default function Editor({
     })
     const publishSourceSyncResult = (input) => {
       const coordinated = sourceSyncBridge.publish(input)
-      if (coordinated?.ok) pendingSourceSyncTransactionJournal = null
+      if (coordinated?.ok) {
+        noteSourceSyncRecovery('publish-result')
+        pendingSourceSyncTransactionJournal = null
+      }
       return coordinated
     }
+    const sourceSyncWarning = createSourceSyncWarningManager({
+      fire: (signature, sticky) => {
+        fireToast(
+          tRef.current('save.sourceSyncMismatch'),
+          sticky ? { sticky: true } : { duration: 6000 }
+        )
+      },
+      trace: (name, data) => traceEditorEvent(name, data)
+    })
+    globalThis.__hmSourceSyncWarning = sourceSyncWarning
     let lastSourceSyncWarning = null
     const reportSourceSyncFailure = (reason) => {
       const now = Date.now()
@@ -1760,8 +1774,10 @@ export default function Editor({
           )
         })
       }
-      fireToast(tRef.current('save.sourceSyncMismatch'), { sticky: true })
+      sourceSyncWarning.deferFailure(signature)
     }
+
+    const noteSourceSyncRecovery = (site) => sourceSyncWarning.noteRecovery(site)
 
     const pushStructuralTransactionTrace = (entry, value) => {
       const trace = globalThis[entry.traceKey]
@@ -1878,6 +1894,7 @@ export default function Editor({
           }
         }
 
+        noteSourceSyncRecovery('structural-owner')
         pendingSourceSyncTransactionJournal = null
         if (Array.isArray(globalThis.__hmPreserveLog)) {
           globalThis.__hmPreserveLog.push({
@@ -2446,6 +2463,7 @@ export default function Editor({
               notifyChange: true
             })
             if (ownedStructuralTransaction.ok) {
+              noteSourceSyncRecovery('structural-markdown-updated')
               transactionSourcePendingPublish = false
               transactionSourcePendingDoc = null
               transactionSourceBlockHints = []
@@ -2494,6 +2512,7 @@ export default function Editor({
                         trigger: retiredLegacyFailure,
                         site: 'retired-structural'
                       })
+                      noteSourceSyncRecovery('retired-structural-fallback')
                       transactionSourcePendingPublish = false
                       transactionSourcePendingDoc = null
                       transactionSourceBlockHints = []
@@ -2557,6 +2576,7 @@ export default function Editor({
                 authorityEligible: published.ok
               })
               if (published.ok) {
+                noteSourceSyncRecovery('plain-paragraph-authority')
                 transactionSourcePendingPublish = false
                 transactionSourcePendingDoc = null
                 transactionSourceBlockHints = []
@@ -2585,6 +2605,7 @@ export default function Editor({
                 areSourceDocumentsEquivalent(callbackDoc, transactionSourcePendingDoc)
               ) {
                 canonicalMarkdownRef.current = canonical
+                noteSourceSyncRecovery('fast-confirm')
                 clearRichFlushPending()
                 transactionSourcePendingPublish = false
                 transactionSourcePendingDoc = null
@@ -3250,6 +3271,7 @@ export default function Editor({
                   trigger: scratchFallback.triggerReason,
                   site: 'unmapped-preserve'
                 })
+                noteSourceSyncRecovery('unmapped-preserve-fallback')
                 transactionSourcePendingPublish = false
                 transactionSourcePendingDoc = null
                 transactionSourceBlockHints = []
@@ -3297,6 +3319,7 @@ export default function Editor({
                   trigger: reason,
                   site: 'publish-prepared'
                 })
+                noteSourceSyncRecovery('publish-prepared-fallback')
                 transactionSourcePendingPublish = false
                 transactionSourcePendingDoc = null
                 transactionSourceBlockHints = []
@@ -3312,6 +3335,7 @@ export default function Editor({
             userEditUntil = Date.now() + 1000
             return
           }
+          noteSourceSyncRecovery('markdown-updated-final')
           transactionSourcePendingPublish = false
           transactionSourcePendingDoc = null
           transactionSourceBlockHints = []
@@ -3408,6 +3432,10 @@ export default function Editor({
         runMarkdownSyncPipeline(md)
       })
       cleanups.push(() => cancelDeferredMarkdownSync())
+      cleanups.push(() => {
+        sourceSyncWarning.dispose()
+        delete globalThis.__hmSourceSyncWarning
+      })
     })
 
     const runCreate = () =>
