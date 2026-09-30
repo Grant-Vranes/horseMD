@@ -1,3 +1,8 @@
+## [0.13.269] - 2026-10-01
+
+### Improved
+- **「检测到富文本与源码不一致」警告降扰**：源码同步完整性失败不再在失败瞬间立即弹出 sticky 警告，而是先进入 600ms 静默观察窗口——期间任何一次源码发布成功（自动恢复）就完全静默（只留 `source-sync-recovered` trace）。引用块内回车/删除/空格等秒级闪断不再打扰。窗口结束仍未恢复才提示，且首次为**非 sticky**（6s 自动消失）；同一原因 3s 内连续两次未恢复才升级回 sticky。fail-closed 提交语义（不提交、保留 dirty、保存前复核）完全不变。实现：`src/renderer/src/components/editor-source-sync-warning.js`（纯逻辑状态机）+ `Editor.jsx` 全部成功发布点挂恢复钩子。回归：`npm run test:source-sync-warning-manager`（10 组单测）、`npm run test:source-sync-deferred-warning-ui`（真实 Electron 三场景：自愈静默 / 持久非 sticky / 双到期升级）。
+
 ## [0.13.268] - 2026-09-28
 
 ### Fixed
