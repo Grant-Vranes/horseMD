@@ -601,6 +601,9 @@ export default function Sidebar({
           <button title={t('side.newFile')} onClick={() => startNewFile(null)}>
             <Icon name="file-plus" size={15} />
           </button>
+          <button title={t('side.newFolder')} onClick={() => startNewFolder(null)}>
+            <Icon name="folder-plus" size={15} />
+          </button>
           {window.api?.capabilities?.excalidraw && (
             <button title={t('side.newWhiteboard')} onClick={() => startNewWhiteboard(null)}>
               <Icon name="whiteboard" size={15} />
@@ -611,9 +614,6 @@ export default function Sidebar({
               <Icon name="diagram" size={15} />
             </button>
           )}
-          <button title={t('side.newFolder')} onClick={() => startNewFolder(null)}>
-            <Icon name="folder-plus" size={15} />
-          </button>
           <span className="sidebar-action-sep" aria-hidden="true" />
           {(() => {
             // Toggle: when everything's collapsed (only roots open), expand all;
@@ -698,6 +698,8 @@ export default function Sidebar({
         t={t}
         onClose={closeMenu}
         onNewFile={startNewFile}
+        onNewWhiteboard={window.api?.capabilities?.excalidraw ? startNewWhiteboard : undefined}
+        onNewDiagram={window.api?.capabilities?.drawio ? startNewDiagram : undefined}
         onNewFolder={startNewFolder}
         onAddFolder={onAddFolder}
         onOpenRight={onOpenRight}

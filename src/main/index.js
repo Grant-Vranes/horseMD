@@ -593,6 +593,27 @@ function registerLocalMediaProtocol() {
   })
 }
 
+// Linux IME integration: under GNOME/Wayland + IBus, Chromium's default text-input
+// path loses the composition pipeline (preedit never reaches the renderer,
+// commit keys like Space leak into the document as literal spaces — traced as
+// raw Space keydowns with no letter keydowns and the IBus warning "no capability
+// of surrounding-text"). Those leaked spaces are Markdown-semantic (hard-break
+// trailing spaces) and accumulate until the source-fidelity layer fail-closes
+// with a sync-mismatch warning. Enabling the native Wayland text-input protocol
+// restores preedit/commit. The switches must be appended before app ready.
+// X11 sessions ignore them; appendSwitch is a no-op there.
+if (process.platform === 'linux') {
+  app.commandLine.appendSwitch('enable-wayland-ime')
+  app.commandLine.appendSwitch('wayland-text-input-version', '3')
+  // The IME switches only take effect on the native Wayland backend; under
+  // XWayland IBus loses preedit/commit (see above). Hint auto lets Chromium
+  // pick Wayland when $WAYLAND_DISPLAY is set (X11 sessions keep X11). Users
+  // who pass their own --ozone-platform flag keep precedence.
+  if (!process.argv.includes('--ozone-platform') && !process.argv.includes('--ozone-platform-hint')) {
+    app.commandLine.appendSwitch('ozone-platform-hint', 'auto')
+  }
+}
+
 app.whenReady().then(() => {
   // Win/Linux: argv carries the launched file/folder. Merge into the launch
   // queue (macOS open-file events already pushed above). Delivered on the

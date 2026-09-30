@@ -8,6 +8,8 @@ export default function SidebarContextMenu({
   t,
   onClose,
   onNewFile,
+  onNewWhiteboard,
+  onNewDiagram,
   onNewFolder,
   onAddFolder,
   onOpenRight,
@@ -61,6 +63,12 @@ export default function SidebarContextMenu({
       onClick={(event) => event.stopPropagation()}
     >
       <button onClick={run(() => onNewFile(node?.type === 'dir' ? node : null))}>{t('side.ctxNewFile')}</button>
+      {onNewWhiteboard && window.api?.capabilities?.excalidraw && (
+        <button onClick={run(() => onNewWhiteboard(node?.type === 'dir' ? node : null))}>{t('side.newWhiteboard')}</button>
+      )}
+      {onNewDiagram && window.api?.capabilities?.drawio && (
+        <button onClick={run(() => onNewDiagram(node?.type === 'dir' ? node : null))}>{t('side.newDiagram')}</button>
+      )}
       <button onClick={run(() => onNewFolder(node?.type === 'dir' ? node : null))}>{t('side.ctxNewFolder')}</button>
       {!node && (
         <>

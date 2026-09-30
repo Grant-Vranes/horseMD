@@ -36,6 +36,7 @@ export async function launchBuiltElectron({
   if (cleanProfile && profileDir) await rm(profileDir, { recursive: true, force: true })
   await assertTcpPortAvailable(port)
   const child = spawn(executable, [
+    ...(process.env.ELECTRON_TEST_NO_SANDBOX === '1' ? ['--no-sandbox'] : []),
     ...(profileDir ? [`--user-data-dir=${profileDir}`] : []),
     `--remote-debugging-port=${port}`,
     ...(entrypoint ? [entrypoint] : []),
