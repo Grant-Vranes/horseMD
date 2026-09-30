@@ -108,6 +108,7 @@
     "test:command-palette-keybindings-ui": "node scripts/test-command-palette-keybindings-ui.mjs",
     "test:shortcuts": "npm run shortcuts:inventory && npm run test:keybindings && npm run test:keybindings-ui && npm run test:keybindings-persistence-ui && npm run test:keybindings-runtime-ui && npm run test:menu-keybindings-ui && npm run test:settings-ui && npm run test:settings-layout-ui && npm run test:settings-update && npm run test:settings-actions && npm run test:command-palette-keybindings-ui",
     "test:ui-regression": "node scripts/run-ui-regression.mjs",
+    "test:source-sync-deferred-warning-ui": "node scripts/test-source-sync-deferred-warning-ui.mjs",
     "test:source-find": "node scripts/test-source-find.mjs",
     "test:pdf-export": "node scripts/test-pdf-export-state.mjs && node scripts/test-latest-task-runner.mjs && node scripts/test-pdf-images.mjs",
     "test:editor-registry": "node scripts/test-editor-api-registry.mjs",

@@ -1735,7 +1735,12 @@ export default function Editor({
           sticky ? { sticky: true } : { duration: 6000 }
         )
       },
-      trace: (name, data) => traceEditorEvent(name, data)
+      trace: (name, data) => {
+        const log = (globalThis.__hmSourceSyncTrace ||= [])
+        log.push({ name, data, at: Date.now() })
+        if (log.length > 50) log.shift()
+        traceEditorEvent(name, data)
+      }
     })
     globalThis.__hmSourceSyncWarning = sourceSyncWarning
     let lastSourceSyncWarning = null
