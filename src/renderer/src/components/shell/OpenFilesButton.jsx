@@ -7,12 +7,28 @@ import { useEffect, useRef, useState } from 'react'
 import { Icon } from '../icons.jsx'
 import { isTabDirty } from '../../lib/tab-state.js'
 import { tabFileIcon } from '../../lib/file-type-icon.js'
+import { tabFileMeta } from '../../lib/file-meta.js'
+import { getCachedFileSize, fetchFileSize } from '../../lib/file-size.js'
 
 export default function OpenFilesButton({ tabs, activeId, t, onActivate, onClose }) {
   const [open, setOpen] = useState(false)
   const [pos, setPos] = useState(null)
+  // Disk sizes for media tabs (images / PDF keep their tab content empty).
+  const [sizes, setSizes] = useState({})
   const rootRef = useRef(null)
   const btnRef = useRef(null)
+
+  // Resolve missing disk sizes when the flyout opens (cached per path).
+  useEffect(() => {
+    if (!open) return
+    tabs.forEach((tab) => {
+      const path = tab.path
+      if (!path || getCachedFileSize(path) != null) return
+      fetchFileSize(path).then((size) => {
+        if (size != null) setSizes((prev) => (prev[path] === size ? prev : { ...prev, [path]: size }))
+      })
+    })
+  }, [open, tabs])
 
   const measure = () => {
     const r = btnRef.current?.getBoundingClientRect()
@@ -67,7 +83,11 @@ export default function OpenFilesButton({ tabs, activeId, t, onActivate, onClose
                 key={tab.id}
                 role="menuitem"
                 className={`open-files-item${active ? ' active' : ''}`}
-                title={tab.path || tab.title}
+                title={(() => {
+                  const meta = tabFileMeta(tab, tab.path ? (getCachedFileSize(tab.path) ?? sizes[tab.path] ?? null) : null)
+                  const base = tab.path || tab.title
+                  return meta ? `${base}\n${meta}` : base
+                })()}
                 onClick={() => {
                   onActivate(tab.id)
                   setOpen(false)

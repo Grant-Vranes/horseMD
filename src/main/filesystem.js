@@ -129,6 +129,16 @@ export function registerFileSystemIpc(ipcMain, { shell, markdownPattern }) {
     return { content, mtimeMs: stat.mtimeMs }
   })
 
+  ipcMain.handle('fs:stat', async (_event, path) => {
+    try {
+      const s = await fs.stat(path)
+      if (!s.isFile()) return null
+      return { size: s.size, mtimeMs: s.mtimeMs }
+    } catch {
+      return null
+    }
+  })
+
   ipcMain.handle('fs:writeFile', async (_event, path, content) => {
     await fs.writeFile(path, content, 'utf8')
     const stat = await fs.stat(path)

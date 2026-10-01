@@ -328,6 +328,7 @@ export function makeCapacitorApi() {
 
     // fs
     readFile,
+    fileStat: async () => null,
     writeFile,
     rename,
     deleteItem,

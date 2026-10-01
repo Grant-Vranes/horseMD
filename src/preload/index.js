@@ -35,6 +35,7 @@ const api = {
 
   // fs
   readFile: (path) => ipcRenderer.invoke('fs:readFile', path),
+  fileStat: (path) => ipcRenderer.invoke('fs:stat', path),
   writeFile: (path, content) => ipcRenderer.invoke('fs:writeFile', path, content),
   writeBinary: (path, base64) => ipcRenderer.invoke('fs:writeBinary', path, base64),
 

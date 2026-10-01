@@ -4,6 +4,8 @@ import { Icon } from './icons.jsx'
 import { useI18n } from '../i18n.jsx'
 import { isMarkdownName, isExcalidrawName, isDrawioName, isExcalidrawTab, isDrawioTab } from '../paths.js'
 import { tabFileIcon } from '../lib/file-type-icon.js'
+import { tabFileMeta } from '../lib/file-meta.js'
+import { getCachedFileSize, fetchFileSize } from '../lib/file-size.js'
 import { copyToClipboard } from '../ui.js'
 import { labelWithShortcut } from '../lib/commands/shortcut-labels.js'
 import ExportContextSubmenu from './ExportContextSubmenu.jsx'
@@ -52,23 +54,48 @@ export default function Tabs({
   // file name, path, and last-modified time in a rich card instead of the
   // native `title` string. tip = { tab, rect } while visible.
   const [tip, setTip] = useState(null)
+  // Disk sizes for media tabs (images / PDF keep their tab content empty).
+  // Fetched once per path through the shared file-size cache.
+  const [mediaSizes, setMediaSizes] = useState({})
+  const tipPath = tip?.tab?.path || null
+  useEffect(() => {
+    if (!tipPath || getCachedFileSize(tipPath) != null) return
+    let alive = true
+    fetchFileSize(tipPath).then((size) => {
+      if (alive && size != null) setMediaSizes((prev) => ({ ...prev, [tipPath]: size }))
+    })
+    return () => { alive = false }
+  }, [tipPath])
+  const tipSize = tipPath ? (getCachedFileSize(tipPath) ?? mediaSizes[tipPath] ?? null) : null
   const tipTimerRef = useRef(null)
+  const tipHideTimerRef = useRef(null)
   const clearTipTimer = () => {
     if (tipTimerRef.current) {
       clearTimeout(tipTimerRef.current)
       tipTimerRef.current = null
     }
   }
-  useEffect(() => clearTipTimer, [])
+  const clearTipHideTimer = () => {
+    if (tipHideTimerRef.current) {
+      clearTimeout(tipHideTimerRef.current)
+      tipHideTimerRef.current = null
+    }
+  }
+  useEffect(() => () => { clearTipTimer(); clearTipHideTimer() }, [])
   const showTip = (tab, el) => {
     clearTipTimer()
+    clearTipHideTimer()
     tipTimerRef.current = setTimeout(() => {
       setTip({ tab, rect: el.getBoundingClientRect() })
     }, 450)
   }
+  // Delayed hide: leaves a short window to move the pointer onto the card
+  // itself (the copy-path button lives there), instead of vanishing the moment
+  // the pointer crosses the gap under the tab.
   const hideTip = () => {
     clearTipTimer()
-    setTip(null)
+    clearTipHideTimer()
+    tipHideTimerRef.current = setTimeout(() => setTip(null), 250)
   }
   // If the tipped tab closes (close ✕ under the pointer, middle-click, context
   // menu, etc.) the hover that would normally hide the tip never happens, so
@@ -239,9 +266,30 @@ export default function Tabs({
         const top = Math.min(rect.bottom + 8, window.innerHeight - 90)
         const { tab } = tip
         return createPortal(
-          <div className="tab-tip" role="tooltip" style={{ left, top, width }}>
+          <div className="tab-tip" role="tooltip" style={{ left, top, width }}
+            onMouseEnter={clearTipHideTimer}
+            onMouseLeave={hideTip}
+          >
             <div className="tab-tip-name">{tab.title}</div>
-            <div className="tab-tip-path">{tab.path || t('tab.noPath')}</div>
+            <div className="tab-tip-path-row">
+              <span className="tab-tip-path">{tab.path || t('tab.noPath')}</span>
+              {tab.path && (
+                <button
+                  className="tab-tip-copy"
+                  title={t('tab.copyPath')}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    copyToClipboard(tab.path, t('code.copied'))
+                  }}
+                >
+                  <Icon name="copy" size={12} />
+                </button>
+              )}
+            </div>
+            {(() => {
+              const meta = tabFileMeta(tab, tipSize)
+              return meta ? <div className="tab-tip-meta">{meta}</div> : null
+            })()}
             {tab.mtimeMs != null && (
               <div className="tab-tip-time">
                 {t('tab.tip.modified')}

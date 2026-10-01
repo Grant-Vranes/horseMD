@@ -1813,7 +1813,6 @@ body.resizing-pane .pane-left-resizer::before {
   border-radius: var(--radius-md);
   background: var(--bg-elevated);
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
-  pointer-events: none;
   -webkit-app-region: no-drag;
   z-index: 1000;
   animation: tab-tip-in 0.12s var(--ease-out);
@@ -1830,11 +1829,44 @@ body.resizing-pane .pane-left-resizer::before {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.tab-tip-path {
+.tab-tip-path-row {
   margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.tab-tip-path {
+  flex: 1;
+  min-width: 0;
   font-size: 11px;
   color: var(--muted);
-  word-break: break-all;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tab-tip-copy {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.tab-tip-copy:hover {
+  background: var(--active);
+  color: var(--text);
+}
+.tab-tip-meta {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--muted);
 }
 .tab-tip-time {
   margin-top: 4px;
@@ -3979,6 +4011,18 @@ body.hm-full-width .source-editor {
 }
 .status-dot.mod { color: var(--accent); }
 .status-dot.ok { color: var(--faint); }
+.status-filetype {
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
 .status-btn {
   display: flex;
   align-items: center;
