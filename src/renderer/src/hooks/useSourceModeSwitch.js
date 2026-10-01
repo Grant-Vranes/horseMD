@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { isHeavyDoc } from '../paths.js'
+import { isHeavyDoc, isMarkdownName } from '../paths.js'
 import {
   captureRichCaret,
   captureRichViewport,
@@ -130,6 +130,11 @@ export function useSourceModeSwitch({
     const id = activeIdRef.current
     const tab = tabsRef.current.find((item) => item.id === id)
     if (!id || tab?.kind === 'settings') return false
+    // Rich/source mode is a Markdown-only feature. Pathless tabs without an
+    // explicit fileType are Markdown scratch tabs; everything else (html, code,
+    // canvas, media) never enters source mode.
+    if (tab.fileType ? tab.fileType !== 'markdown' : !!(tab.path && !isMarkdownName(tab.path)))
+      return false
     if (sourceModeRef.current) commitAllLive()
     else if (!await flushRichSource(id)) {
       // The visible edit cannot be mapped byte-safely. Do not trap it in

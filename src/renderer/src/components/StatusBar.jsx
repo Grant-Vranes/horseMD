@@ -8,6 +8,22 @@ import LayoutControl from './LayoutControl.jsx'
 import { usePopover } from '../hooks/usePopover.js'
 import { labelWithShortcut } from '../lib/commands/shortcut-labels.js'
 import { isTabDirty } from '../lib/tab-state.js'
+import { isMarkdownName } from '../paths.js'
+
+// The rich/source toggle only applies to Markdown documents. For every other
+// file kind we show a static file-type label (uppercase extension) instead.
+const isMarkdownTab = (tab) => {
+  if (!tab) return false
+  if (tab.fileType) return tab.fileType === 'markdown'
+  return !tab.path || isMarkdownName(tab.path)
+}
+const fileTypeLabel = (tab) => {
+  const name = tab.path || tab.title || ''
+  const m = /\.([A-Za-z0-9]+)$/.exec(name)
+  if (m) return m[1].toUpperCase()
+  const base = name.split('/').pop() || ''
+  return base.replace(/^\./, '').toUpperCase() || 'FILE'
+}
 
 function stats(md) {
   const text = (md || '')
@@ -196,7 +212,8 @@ function MobileMore({
   onPickCustom,
   onRefreshThemes,
   fontSize,
-  onSetFontSize
+  onSetFontSize,
+  showSourceToggle = true
 }) {
   const { t } = useI18n()
   const { open, setOpen, ref } = usePopover()
@@ -230,6 +247,8 @@ function MobileMore({
           <div className="theme-menu-sep" />
           <button
             className="block-menu-item"
+            disabled={!showSourceToggle}
+            style={showSourceToggle ? undefined : { display: 'none' }}
             onClick={() => {
               onToggleSource()
               setOpen(false)
@@ -427,19 +446,28 @@ export default function StatusBar({
                 onRefreshThemes={onRefreshThemes}
                 fontSize={fontSize}
                 onSetFontSize={onSetFontSize}
+                showSourceToggle={showSourceToggle}
               />
             </>
           )
         ) : (
           <>
             {tab && <StatsControl stats={s} />}
-            <button
-              className="status-btn"
-              onClick={onToggleSource}
-              title={labelWithShortcut(t('tip.toggleSource'), 'view.toggleSource', effectiveKeybindings)}
-            >
-              <Icon name="code" size={14} /> {sourceMode ? t('status.source') : t('status.rich')}
-            </button>
+            {tab && isMarkdownTab(tab) ? (
+              <button
+                className="status-btn"
+                onClick={onToggleSource}
+                title={labelWithShortcut(t('tip.toggleSource'), 'view.toggleSource', effectiveKeybindings)}
+              >
+                <Icon name="code" size={14} /> {sourceMode ? t('status.source') : t('status.rich')}
+              </button>
+            ) : (
+              tab && (
+                <span className="status-filetype" title={fileTypeLabel(tab)}>
+                  {fileTypeLabel(tab)}
+                </span>
+              )
+            )}
             <LayoutControl
               fontSize={fontSize}
               onSetFontSize={onSetFontSize}
