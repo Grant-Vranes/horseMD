@@ -7742,6 +7742,35 @@ body.dark .milkdown .ProseMirror .hm-review-card-text {
   background: #fff;
   display: block;
 }
+.json-format-btn {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  z-index: 5;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: none;
+  background: var(--bg-elevated, #faf8f5);
+  color: var(--muted, inherit);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.15s ease, transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.json-format-btn:hover {
+  background: var(--hover-elevated, #fff);
+  color: var(--text, inherit);
+  transform: translateY(-1px);
+}
+.json-format-btn.json-format-error {
+  color: #d64545;
+}
+.json-format-btn.json-restore-btn {
+  right: 52px;
+}
 .html-mode-toggle {
   position: absolute;
   top: 10px;
