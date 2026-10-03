@@ -17,6 +17,7 @@ import { Suspense, lazy, useRef } from 'react'
 import { Icon } from '../icons.jsx'
 import { isDrawioName, isExcalidrawName, isDrawioTab, isExcalidrawTab, isCodeDoc, isMediaDoc, isPdfName, isPlainTextDoc, isHtmlTab, isHugeTextDoc, shouldAutoRenderHtml, shouldUseRichContentVisibility } from '../../paths.js'
 import { attachSourceCaret } from '../editor-source-caret.js'
+import SourceGutter from '../SourceGutter.jsx'
 import { updateTextareaSourceFromDom } from '../../source-text-fidelity.js'
 
 // Lazy calls must stay BELOW the react import: in dev, Vite's CJS interop
@@ -415,14 +416,18 @@ export default function EditorArea({
             if (isLeft && (!existing || sourceRef.current === existing)) sourceRef.current = null
           }
           nodes.push(
-            <textarea
+            <div
               key={`source:${tab.id}:${tab.reloadNonce}`}
+              className={`source-editor-wrap${paneClass}${isSourceRichSplit ? ' hm-source-rich-left' : ''}`}
+              style={{ order: isSourceRichSplit ? 1 : order, flex: isSourceRichSplit ? sourceRichFlex : paneFlex }}
+            >
+              <SourceGutter />
+              <textarea
               ref={setSourceTextareaRef}
               className={`source-editor${paneClass}${isSourceRichSplit ? ' hm-source-rich-left' : ''}`}
               defaultValue={initialSource}
               readOnly={readOnly}
               spellCheck={false}
-              style={{ order: isSourceRichSplit ? 1 : order, flex: isSourceRichSplit ? sourceRichFlex : paneFlex }}
               onFocus={() => onPaneFocus('source')}
               onMouseDown={(e) => {
                 onPaneFocus('source')
@@ -480,7 +485,8 @@ export default function EditorArea({
                 if (prev) clearTimeout(prev)
                 liveTimersRef.current.set(tab.id, setTimeout(() => commitLive(tab.id), 400))
               }}
-            />
+              />
+            </div>
           )
         }
         // Lazy mount: don't create a Crepe editor for a tab the user hasn't

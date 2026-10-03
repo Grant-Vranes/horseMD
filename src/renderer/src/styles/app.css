@@ -3801,6 +3801,46 @@ body.dark .hm-hl-swatch.hm-hl-blue { background: #4a78b8; }
   content: var(--hm-placeholder, attr(data-placeholder));
 }
 
+.source-editor-wrap {
+  position: relative;
+  display: flex;
+  /* Pane sizing lives here now: the textarea used to be the direct flex child
+     with flex:1, so the wrapper must take over that role when no inline flex
+     (split ratio) is provided. */
+  flex: 1 1 0;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+.source-editor-wrap .source-editor {
+  flex: 1;
+}
+/* Line-number column overlaid on the pane's left edge. Non-interactive:
+   clicks pass through to the textarea. Scroll is synced from the textarea. */
+.source-gutter {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 44px;
+  overflow: hidden;
+  padding: 40px 10px 60vh 0;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: calc(var(--editor-font-size, 16px) + var(--source-font-offset, 0px));
+  line-height: 1.75;
+  color: var(--faint);
+  pointer-events: none;
+  user-select: none;
+  white-space: pre;
+  z-index: 2;
+}
+.editor-area.is-source-rich-split .source-gutter.hm-source-rich-left {
+  padding-bottom: 20vh;
+}
+.editor-area.is-source-rich-split .source-editor-wrap.hm-source-rich-left .source-gutter {
+  padding: 40px 8px 20vh 0;
+}
 .source-editor {
   flex: 1;
   width: 100%;
@@ -7450,6 +7490,8 @@ body.dark .milkdown .ProseMirror .hm-review-card-text {
   padding-left: 18px !important;
   padding-right: 18px !important;
 }
+/* Phone panes are too narrow for a number column. */
+.app.is-mobile .source-gutter { display: none; }
 
 /* Typography tuned for a phone: the desktop heading scale (h1 = 2.25em ≈ 36px)
    is oversized on a narrow column, so step the headings down and tighten the
