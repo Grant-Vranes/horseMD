@@ -42,6 +42,13 @@ export async function readDirectoryTree(dir, { showHidden = false, markdownPatte
 }
 
 async function collectMarkdownFiles(root, dir, acc, depth, options) {
+  // Time budget: a huge workspace root (tens of GB, broad trees) can take
+  // minutes to walk, and this runs on the main process — the walk starves the
+  // event loop's IPC handling and freezes the whole app (window controls,
+  // menus, every save). The palette list is a fuzzy quick-switcher, so a
+  // bounded best-effort result is the right trade: stop when the budget or
+  // the file cap is hit instead of walking to exhaustion.
+  if (options.deadline && Date.now() > options.deadline) return
   if (depth > 12 || acc.length >= 5000) return
   let entries
   try {
@@ -71,6 +78,9 @@ export async function listMarkdownFiles(root, options = {}) {
   const acc = []
   await collectMarkdownFiles(root, root, acc, 0, {
     showHidden: false,
+    // 1.5s per root keeps the main process responsive; the palette remains
+    // usable (recents + near-root files) even on enormous workspaces.
+    deadline: Date.now() + 1500,
     ...options
   })
   return acc

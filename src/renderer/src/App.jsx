@@ -691,7 +691,8 @@ export default function App() {
     addFolder,
     removeFolder,
     files,
-    refreshNonce,
+    ensureFiles,
+    refreshSignal,
     bumpRefresh,
     reloadTabFromDisk
   } = useFileOps({
@@ -767,11 +768,26 @@ export default function App() {
   }, [syncWorkspaces.removeFolder, tRef])
 
   // Sync the show-hidden-files setting to main (readTree filter) + refresh the
-  // file tree when it changes (#29).
+  // file tree when it changes (#29). Keyed off the setting only — folderRoots
+  // is read via ref so adding/removing a root doesn't force a full tree reload
+  // of every loaded directory (part of the workspace-removal stall).
+  const showHiddenRef = useRef(null)
+  const folderRootsRef = useRef(null)
+  folderRootsRef.current = folderRoots
   useEffect(() => {
+    if (showHiddenRef.current !== null && showHiddenRef.current !== settings.showHiddenFiles && folderRootsRef.current.length) {
+      bumpRefresh()
+    }
+    showHiddenRef.current = settings.showHiddenFiles
     window.api.setShowHidden?.(settings.showHiddenFiles)
-    if (folderRoots.length) bumpRefresh()
-  }, [settings.showHiddenFiles, bumpRefresh, folderRoots])
+  }, [settings.showHiddenFiles, bumpRefresh])
+
+  // The palette file list is expensive to build (recursive walk of every root
+  // on the main process). Compute it lazily when the palette opens, never on
+  // workspace add/remove or watcher events.
+  useEffect(() => {
+    if (paletteOpen) ensureFiles()
+  }, [paletteOpen, ensureFiles])
 
   // Keep main's close-to-tray behavior in sync with the persisted preference
   // (opt-in: both sides default to off, so this only pushes explicit choices).
@@ -1302,7 +1318,7 @@ export default function App() {
                 onExportPdf={exportPathToPdf}
                 onExportHtml={exportPathToHtml}
                 onExportPandoc={exportPathWithPandoc}
-                refreshNonce={refreshNonce}
+                refreshSignal={refreshSignal}
                 syncSupported={syncWorkspaces.supported}
                 syncFolderPaths={syncWorkspaces.registered.map((entry) => entry.rootPath)}
                 onEnableSyncFolder={enableSyncFolder}

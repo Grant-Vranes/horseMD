@@ -1215,13 +1215,14 @@ ipcMain.handle('devtools:inspectElement', (event, x, y) => {
 
 // Settings › Developer tools: open DevTools docked to the bottom of the main
 // window so it is always visible (a detached window can hide behind the app).
+// This is a force-(re)open, not a toggle: if DevTools is already open — docked,
+// detached, or drifted off-screen — close it first and reopen docked bottom so
+// the button can never look like "DevTools won't open". Closing is handled by
+// the View menu / Cmd+Alt+I toggleDevTools role.
 ipcMain.handle('devtools:open', (event) => {
   const wc = event.sender
   if (wc.getType() !== 'window') return false
-  if (wc.isDevToolsOpened()) {
-    wc.closeDevTools()
-    return false
-  }
+  if (wc.isDevToolsOpened()) wc.closeDevTools()
   wc.openDevTools({ mode: 'bottom', activate: true })
   return true
 })

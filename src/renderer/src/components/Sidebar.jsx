@@ -30,7 +30,7 @@ export default function Sidebar({
   onExportPdf,
   onExportHtml,
   onExportPandoc,
-  refreshNonce,
+  refreshSignal,
   syncSupported = false,
   syncFolderPaths = [],
   onEnableSyncFolder,
@@ -134,7 +134,7 @@ export default function Sidebar({
     }
   }, [supportsExternalDrop, onAddDroppedFolder, onOpenPaths])
   const { childrenMap, expanded, setExpanded, loadDir, toggle, activeRowRef } =
-    useSidebarTree({ folderRoots, activePath, refreshNonce })
+    useSidebarTree({ folderRoots, activePath, refreshSignal })
   const folderRootsKey = folderRoots.join('\n')
   const defaultRoot = folderRoots[0] || null
   const rootSet = new Set(folderRoots.map(normalizePathKey))

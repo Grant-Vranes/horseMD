@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { dirName as parentDir, normalizePathKey } from '../paths.js'
 
-export function useSidebarTree({ folderRoots, activePath, refreshNonce }) {
+export function useSidebarTree({ folderRoots, activePath, refreshSignal }) {
   const [childrenMap, setChildrenMap] = useState({})
   const [expanded, setExpanded] = useState(() => new Set())
   const childrenRef = useRef(childrenMap)
@@ -21,17 +21,39 @@ export function useSidebarTree({ folderRoots, activePath, refreshNonce }) {
   const prevRootsRef = useRef(null)
 
   useEffect(() => {
-    setChildrenMap({})
     const roots = folderRootsKey ? folderRootsKey.split('\n') : []
+    const rootKeys = roots.map(normalizePathKey)
+    const prevKeys = prevRootsRef.current
+      ? new Set(prevRootsRef.current.map(normalizePathKey))
+      : null
+    // Removing a root must not blow away the whole loaded tree (re-reading and
+    // re-rendering every surviving root is the other half of the removal
+    // stall). Only drop cached children under roots that actually went away;
+    // untouched roots keep their loaded directories and expanded subdirs.
+    if (prevKeys) {
+      const removed = [...prevKeys].filter((k) => !rootKeys.some((rk) => k === rk))
+      if (removed.length) {
+        setChildrenMap((current) => {
+          const next = {}
+          for (const [dir, nodes] of Object.entries(current)) {
+            const key = normalizePathKey(dir)
+            if (!removed.some((rk) => key === rk || key.startsWith(rk + '/'))) next[dir] = nodes
+          }
+          return next
+        })
+      }
+    } else {
+      setChildrenMap({})
+    }
     setExpanded((current) => {
       if (prevRootsRef.current === null) return new Set(roots)
       const prevKeys = new Set(prevRootsRef.current.map(normalizePathKey))
-      const rootKeys = roots.map(normalizePathKey)
-      const stillMounted = (item) => {
-        const key = normalizePathKey(item)
-        return rootKeys.some((rk) => key === rk || key.startsWith(rk + '/'))
-      }
-      const next = new Set([...current].filter(stillMounted))
+      const next = new Set([...current].filter((item) =>
+        rootKeys.some((rk) => {
+          const key = normalizePathKey(item)
+          return key === rk || key.startsWith(rk + '/')
+        })
+      ))
       // Newly added roots start expanded so the drop/add result is visible;
       // everything else keeps its current collapsed/expanded state.
       roots.forEach((root) => {
@@ -39,14 +61,27 @@ export function useSidebarTree({ folderRoots, activePath, refreshNonce }) {
       })
       return next
     })
-    roots.forEach((root) => loadDir(root))
+    // Only newly added roots need a load; surviving roots keep their cached
+    // children so removal/add doesn't re-read the whole workspace.
+    roots.forEach((root) => {
+      if (!prevKeys || !prevKeys.has(normalizePathKey(root)) || !childrenRef.current[root]) loadDir(root)
+    })
     prevRootsRef.current = roots
   }, [folderRootsKey, loadDir])
 
   useEffect(() => {
-    if (refreshNonce === 0) return
-    Object.keys(childrenRef.current).forEach((dir) => loadDir(dir))
-  }, [refreshNonce, loadDir])
+    if (refreshSignal.nonce === 0) return
+    const changedRoots = refreshSignal.dirs.map(normalizePathKey)
+    Object.keys(childrenRef.current).forEach((dir) => {
+      // Scope the reload to roots that actually changed when the watcher
+      // tells us which root fired; empty dirs means a full refresh.
+      if (changedRoots.length) {
+        const key = normalizePathKey(dir)
+        if (!changedRoots.some((rk) => key === rk || key.startsWith(rk + '/'))) return
+      }
+      loadDir(dir)
+    })
+  }, [refreshSignal, loadDir])
 
   // Reveal an active file opened by the tree, recents, search, or a link.
   useEffect(() => {

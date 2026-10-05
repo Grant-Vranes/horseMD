@@ -3,6 +3,18 @@ import chokidar from 'chokidar'
 
 const WATCH_IGNORE_RE = /(^|[\\/])(\.(git|obsidian|horsemd)|node_modules)([\\/]|$)/
 
+// Bounded default depth for workspace-root folder watchers. chokidar recursively
+// enumerates every directory up to `depth` on the main process when a watcher is
+// created (even with ignoreInitial:true) to register its baseline. The previous
+// depth of 12 made adding a huge root (tens of GB, broad trees) saturate the
+// main-process event loop for minutes — every menu click, window control, save
+// and other IPC was starved, so the whole app appeared frozen. A shallow default
+// bounds enumeration to well under a second (measured ~0.4s on a 19GB root at
+// depth 4 vs. freezing for minutes at depth 12). Deeper changes still surface
+// through the renderer's scoped tree reload on expand/refresh, mirroring the
+// existing ENOSPC graceful-degrade path (which already drops to depth 2).
+export const DEFAULT_WATCH_DEPTH = 4
+
 export function isAbsoluteWatchPath(path) {
   return /^\//.test(path) || /^[a-zA-Z]:[\\/]/.test(path) || /^\\\\/.test(path)
 }
@@ -73,7 +85,7 @@ export function registerWatcherIpc(ipcMain, { sendToRenderer, watcherFactory = c
         }
       })
     }
-    attach(watchFolder(dir, 12))
+    attach(watchFolder(dir, DEFAULT_WATCH_DEPTH))
     folderWatchers.set(dir, entry)
     return true
   })
