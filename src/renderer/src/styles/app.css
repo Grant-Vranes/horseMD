@@ -7737,16 +7737,19 @@ body.dark .milkdown .ProseMirror .hm-review-card-text {
   flex: 1;
   min-height: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
   overflow: auto;
   padding: 12px;
 }
 /* Zoom renders via transform: scale() on a composited layer; the sizer box
-   keeps native scrollbar panning correct without re-layout of the bitmap. */
+   keeps native scrollbar panning correct without re-layout of the bitmap.
+   Centering uses margin:auto (not flex align/justify-center): flex centering
+   distributes overflow to both edges, making the top/left overflow
+   unreachable by scrolling. With margin:auto the margins collapse to 0 when
+   the sizer overflows, so all edges stay scrollable. */
 .media-sizer {
   position: relative;
   flex: none;
+  margin: auto;
 }
 .media-sizer img {
   position: absolute;

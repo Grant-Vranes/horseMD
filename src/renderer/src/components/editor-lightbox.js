@@ -1,6 +1,20 @@
 import { useEffect } from 'react'
 
 const clampScale = (scale) => Math.min(10, Math.max(0.2, scale))
+const clampNum = (v, min, max) => Math.min(max, Math.max(min, v))
+
+// Keep the (translated, scaled) element partially in view: per axis the image
+// center may stray at most half the scaled overflow beyond the viewport edge
+// plus a small margin, so an edge can always be dragged back on screen.
+const clampTranslate = (element, translate, scale) => {
+  const rect = element.getBoundingClientRect()
+  const marginX = Math.max(0, (rect.width - window.innerWidth) / 2 + 80)
+  const marginY = Math.max(0, (rect.height - window.innerHeight) / 2 + 80)
+  return {
+    x: clampNum(translate.x, -marginX, marginX),
+    y: clampNum(translate.y, -marginY, marginY)
+  }
+}
 
 const applyTransform = (element, scale, translate) => {
   if (!element) return
@@ -16,11 +30,27 @@ export function useEditorLightboxControls({
   contentRef,
   setScaleLabel
 }) {
-  const setScale = (nextScale, resetPan = false) => {
+  const setScale = (nextScale, resetPan = false, anchor = null) => {
+    const element = contentRef.current
+    const prevScale = scaleRef.current
     const scale = clampScale(nextScale)
     scaleRef.current = scale
-    if (resetPan) translateRef.current = { x: 0, y: 0 }
-    applyTransform(contentRef.current, scale, translateRef.current)
+    if (resetPan || !element) {
+      translateRef.current = { x: 0, y: 0 }
+    } else {
+      // Anchor the zoom at a viewport point (cursor): the content-space offset
+      // of that point from the element center must map to the same screen
+      // offset after the scale change, so the translate absorbs the difference.
+      const rect = element.getBoundingClientRect()
+      const px = anchor ? anchor.x - (rect.left + rect.width / 2) : 0
+      const py = anchor ? anchor.y - (rect.top + rect.height / 2) : 0
+      const ratio = scale / prevScale
+      translateRef.current = clampTranslate(element, {
+        x: translateRef.current.x + px * (1 - ratio),
+        y: translateRef.current.y + py * (1 - ratio)
+      }, scale)
+    }
+    applyTransform(element, scale, translateRef.current)
     setScaleLabel(scale)
   }
 
@@ -67,10 +97,7 @@ export function useEditorLightboxControls({
       const element = contentRef.current
       if (!element) return
       const factor = event.deltaY < 0 ? 1.1 : 1 / 1.1
-      const scale = clampScale(scaleRef.current * factor)
-      scaleRef.current = scale
-      applyTransform(element, scale, translateRef.current)
-      setScaleLabel(scale)
+      setScale(scaleRef.current * factor, false, { x: event.clientX, y: event.clientY })
     }
     const onMouseDown = (event) => {
       const element = contentRef.current
@@ -84,7 +111,10 @@ export function useEditorLightboxControls({
       let dragged = false
       const onMove = (moveEvent) => {
         dragged = true
-        translateRef.current = { x: moveEvent.clientX - startX, y: moveEvent.clientY - startY }
+        translateRef.current = clampTranslate(element, {
+          x: moveEvent.clientX - startX,
+          y: moveEvent.clientY - startY
+        }, scaleRef.current)
         applyTransform(element, scaleRef.current, translateRef.current)
       }
       const onUp = () => {

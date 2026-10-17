@@ -5,6 +5,7 @@
 // <img> width would re-layout and re-rasterize the full bitmap every frame.
 // Zoom/rotation are per-tab ephemeral state; no editing, no dirty tracking.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { fileUrlForAbsolutePath, toDisplayImageUrl } from './editor-images.js'
 import { useI18n } from '../i18n.jsx'
 
@@ -64,10 +65,7 @@ export default function MediaViewer({ tab }) {
     const onWheel = (e) => {
       if (!(e.ctrlKey || e.metaKey)) return
       e.preventDefault()
-      setZoom((prev) => {
-        const base = prev == null ? fitScaleRef.current : prev
-        return clampZoom(base * Math.exp(-e.deltaY * 0.002))
-      })
+      zoomAt(Math.exp(-e.deltaY * 0.002), e.clientX, e.clientY)
     }
     el.addEventListener('wheel', onWheel, { passive: false })
     return () => el.removeEventListener('wheel', onWheel)
@@ -76,6 +74,35 @@ export default function MediaViewer({ tab }) {
   useEffect(() => {
     fitScaleRef.current = fitScale
   }, [fitScale])
+
+  // Track the effective zoom so cursor-anchored zooming can compute ratios
+  // without re-binding listeners.
+  const zoomRef = useRef(zoom)
+  useEffect(() => {
+    zoomRef.current = zoom
+  }, [zoom])
+
+  // Zoom by `ratio` keeping the image point under (clientX, clientY) fixed on
+  // screen (stage center when null). The sizer box drives real layout
+  // overflow, so after the zoom commits we re-anchor the scroll offset:
+  // cursor distance from the content origin scales by the zoom ratio, the
+  // distance from the viewport edge stays constant. 12px matches the stage
+  // padding, which does not scale with the content.
+  const zoomAt = useCallback((ratio, clientX, clientY) => {
+    const stage = stageRef.current
+    if (!stage) return
+    const prev = zoomRef.current == null ? fitScaleRef.current : zoomRef.current
+    const next = clampZoom(prev * ratio)
+    if (next === prev) return
+    flushSync(() => setZoom(next))
+    const rect = stage.getBoundingClientRect()
+    const ox = clientX == null ? rect.width / 2 : clientX - rect.left
+    const oy = clientY == null ? rect.height / 2 : clientY - rect.top
+    const r = next / prev
+    const pad = 12
+    stage.scrollLeft = pad + (stage.scrollLeft + ox - pad) * r - ox
+    stage.scrollTop = pad + (stage.scrollTop + oy - pad) * r - oy
+  }, [])
 
   const toggleFit = useCallback(() => {
     setZoom((prev) => {
@@ -110,14 +137,14 @@ export default function MediaViewer({ tab }) {
         <button
           type="button"
           title={t('media.zoomOut')}
-          onClick={() => setZoom((p) => clampZoom((p == null ? fitScale : p) * 0.8))}
+          onClick={() => zoomAt(0.8)}
         >
           −
         </button>
         <button
           type="button"
           title={t('media.zoomIn')}
-          onClick={() => setZoom((p) => clampZoom((p == null ? fitScale : p) * 1.25))}
+          onClick={() => zoomAt(1.25)}
         >
           +
         </button>
