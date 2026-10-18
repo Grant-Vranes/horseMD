@@ -1737,6 +1737,58 @@ body.resizing-pane .pane-left-resizer::before {
 }
 .tabs-fade.visible { opacity: 1; }
 
+/* Hidden-tab count badges shown over the edge fades when the strip overflows.
+   Styled as a miniature sibling of the tab pills (same border recipe and
+   radius) so the affordance reads as part of the strip rather than a floating
+   alert. Clicking one scrolls a page toward that edge to reveal the tabs.
+   Unlike the fades these are interactive, so they need pointer events and
+   no-drag (same reason as .tabs-scroll.can-scroll). */
+.tabs-overflow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 70%, transparent);
+  background: var(--bg-elevated);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  user-select: none;
+  transition:
+    color var(--dur-fast, 120ms) var(--ease-out),
+    border-color var(--dur-fast, 120ms) var(--ease-out),
+    background-color var(--dur-fast, 120ms) var(--ease-out),
+    transform var(--dur-fast, 120ms) var(--ease-out);
+}
+.tabs-overflow.left { left: 3px; }
+.tabs-overflow.right { right: 3px; }
+.tabs-overflow .tabs-overflow-chevron { flex: none; }
+/* The icon set only ships a right chevron; mirror it for the left edge. */
+.tabs-overflow.left .tabs-overflow-chevron { transform: rotate(180deg); }
+.tabs-overflow .tabs-overflow-count { min-width: 8px; text-align: center; }
+.tabs-overflow:hover {
+  color: var(--accent-strong);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 60%, var(--bg-elevated));
+  transform: translateY(-50%) scale(1.08);
+}
+.tabs-overflow:active { transform: translateY(-50%) scale(0.96); }
+.tabs-overflow:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
 .tab {
   display: flex;
   align-items: center;

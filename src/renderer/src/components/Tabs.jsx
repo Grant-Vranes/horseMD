@@ -105,6 +105,9 @@ export default function Tabs({
   }, [tabs])
   const [fadeLeft, setFadeLeft] = useState(false)
   const [fadeRight, setFadeRight] = useState(false)
+  // Counts of tabs fully hidden beyond each edge (shown as clickable badges).
+  const [hiddenLeft, setHiddenLeft] = useState(0)
+  const [hiddenRight, setHiddenRight] = useState(0)
 
   // Keep overflow state in sync: tab count changes, renames that change widths,
   // window resizes, and user scrolling all flip it.
@@ -116,6 +119,19 @@ export default function Tabs({
       setCanScroll(max > 1)
       setFadeLeft(strip.scrollLeft > 1)
       setFadeRight(strip.scrollLeft < max - 1)
+      // Count tabs that lie entirely beyond each visible edge. Rects are used
+      // instead of offsetLeft so scrolling is accounted for.
+      const rect = strip.getBoundingClientRect()
+      let nl = 0
+      let nr = 0
+      for (const child of strip.children) {
+        const cr = child.getBoundingClientRect()
+        if (cr.width === 0) continue
+        if (cr.right <= rect.left + 1) nl++
+        else if (cr.left >= rect.right - 1) nr++
+      }
+      setHiddenLeft(nl)
+      setHiddenRight(nr)
     }
     update()
     const ro = new ResizeObserver(update)
@@ -252,6 +268,26 @@ export default function Tabs({
         <>
           <div className={`tabs-fade left${fadeLeft ? ' visible' : ''}`} aria-hidden="true" />
           <div className={`tabs-fade right${fadeRight ? ' visible' : ''}`} aria-hidden="true" />
+          {hiddenLeft > 0 && (
+            <button
+              className="tabs-overflow left"
+              title={t('tab.hiddenTabs', { n: hiddenLeft })}
+              onClick={() => scrollRef.current?.scrollBy({ left: -scrollRef.current.clientWidth * 0.8, behavior: 'smooth' })}
+            >
+              <Icon className="tabs-overflow-chevron" name="chevron-right" size={10} />
+              <span className="tabs-overflow-count">{hiddenLeft}</span>
+            </button>
+          )}
+          {hiddenRight > 0 && (
+            <button
+              className="tabs-overflow right"
+              title={t('tab.hiddenTabs', { n: hiddenRight })}
+              onClick={() => scrollRef.current?.scrollBy({ left: scrollRef.current.clientWidth * 0.8, behavior: 'smooth' })}
+            >
+              <span className="tabs-overflow-count">{hiddenRight}</span>
+              <Icon className="tabs-overflow-chevron" name="chevron-right" size={10} />
+            </button>
+          )}
         </>
       )}
       <button className="tab-new" title={labelWithShortcut(t('tab.new'), 'file.new', effectiveKeybindings)} onClick={onNew}>

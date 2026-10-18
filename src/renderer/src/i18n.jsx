@@ -767,6 +767,7 @@ export const STRINGS = {
     'tab.close': 'Close',
     'tab.closeOthers': 'Close Others',
     'tab.noPath': 'Unsaved file — save it first',
+    'tab.hiddenTabs': '{n} hidden files',
     'tab.tip.modified': 'Last modified: ',
 
     // excalidraw whiteboard
@@ -1552,6 +1553,7 @@ export const STRINGS = {
     'tab.close': '关闭',
     'tab.closeOthers': '关闭其他',
     'tab.noPath': '未保存的文件，请先保存',
+    'tab.hiddenTabs': '隐藏了 {n} 个文件',
     'tab.tip.modified': '上次修改：',
 
     // excalidraw whiteboard
